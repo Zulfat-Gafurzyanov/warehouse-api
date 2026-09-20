@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -7,9 +8,12 @@ interface HeaderProps {
   onCartClick: () => void;
 }
 
+const navLinkClass = ({ isActive }: { isActive: boolean }) => (isActive ? "active" : "");
+
 export function Header({ onCartClick }: HeaderProps) {
   const { signOut } = useAuth();
   const { totalCount } = useCart();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <header className="header">
@@ -36,13 +40,13 @@ export function Header({ onCartClick }: HeaderProps) {
         </div>
 
         <nav className="header__nav">
-          <NavLink to="/catalog" className={({ isActive }) => (isActive ? "active" : "")}>
+          <NavLink to="/catalog" className={navLinkClass}>
             Каталог
           </NavLink>
-          <NavLink to="/orders" className={({ isActive }) => (isActive ? "active" : "")}>
+          <NavLink to="/orders" className={navLinkClass}>
             Мои заказы
           </NavLink>
-          <NavLink to="/favorites" className={({ isActive }) => (isActive ? "active" : "")}>
+          <NavLink to="/favorites" className={navLinkClass}>
             Избранное
           </NavLink>
         </nav>
@@ -63,11 +67,61 @@ export function Header({ onCartClick }: HeaderProps) {
               <circle cx="10" cy="21" r="1.4" fill="currentColor" />
               <circle cx="17" cy="21" r="1.4" fill="currentColor" />
             </svg>
-            Корзина
+            <span className="header__cart-label">Корзина</span>
             {totalCount > 0 && <span className="header__cart-badge">{totalCount}</span>}
+          </button>
+
+          <button
+            className="header__burger"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label={menuOpen ? "Закрыть меню" : "Открыть меню"}
+            aria-expanded={menuOpen}
+          >
+            {menuOpen ? (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M6 6l12 12M18 6 6 18"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+              </svg>
+            ) : (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M4 7h16M4 12h16M4 17h16"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+              </svg>
+            )}
           </button>
         </div>
       </div>
+
+      {menuOpen && (
+        <nav className="header__mobile-menu">
+          <NavLink to="/catalog" className={navLinkClass} onClick={() => setMenuOpen(false)}>
+            Каталог
+          </NavLink>
+          <NavLink to="/orders" className={navLinkClass} onClick={() => setMenuOpen(false)}>
+            Мои заказы
+          </NavLink>
+          <NavLink to="/favorites" className={navLinkClass} onClick={() => setMenuOpen(false)}>
+            Избранное
+          </NavLink>
+          <button
+            className="header__mobile-logout"
+            onClick={() => {
+              setMenuOpen(false);
+              signOut();
+            }}
+          >
+            Выйти
+          </button>
+        </nav>
+      )}
     </header>
   );
 }
