@@ -1,20 +1,15 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, status
+from fastapi import APIRouter, Depends
 
 from src.api.deps import get_auth_service
-from src.schemas.auth import RefreshRequest, SignInRequest, SignUpRequest, TokenPair
+from src.schemas.auth import RefreshRequest, SignInRequest, TokenPair
 from src.service.auth import AuthService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-
-@router.post("/sign-up", status_code=status.HTTP_201_CREATED)
-async def sign_up(
-    request: Annotated[SignUpRequest, Body],
-    auth_service: Annotated[AuthService, Depends(get_auth_service)],
-) -> TokenPair:
-    return await auth_service.sign_up(request)
+# Самостоятельной регистрации нет: аккаунты клиентов создаёт администратор
+# через POST /admin/users (см. src/api/v1/admin.py).
 
 
 @router.post("/sign-in")

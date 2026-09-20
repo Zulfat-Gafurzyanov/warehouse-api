@@ -1,9 +1,15 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 
 from src.api.deps import get_current_admin, get_user_service
-from src.schemas.user import UserActiveUpdate, UserProfile, UserRoleUpdate
+from src.schemas.user import (
+    ClientCreate,
+    ClientProfileUpdate,
+    UserActiveUpdate,
+    UserProfile,
+    UserRoleUpdate,
+)
 from src.service.user import UserService
 
 router = APIRouter(
@@ -11,6 +17,24 @@ router = APIRouter(
     tags=["admin"],
     dependencies=[Depends(get_current_admin)],
 )
+
+
+@router.post("/users", status_code=status.HTTP_201_CREATED)
+async def create_client(
+    body: ClientCreate,
+    user_service: Annotated[UserService, Depends(get_user_service)],
+) -> UserProfile:
+    """Создание клиента администратором. Самостоятельная регистрация клиентам недоступна."""
+    return await user_service.create_client(body)
+
+
+@router.patch("/users/{user_id}/profile")
+async def update_client_profile(
+    user_id: int,
+    body: ClientProfileUpdate,
+    user_service: Annotated[UserService, Depends(get_user_service)],
+) -> UserProfile:
+    return await user_service.update_client_profile(user_id, body)
 
 
 @router.get("/users")

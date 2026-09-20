@@ -11,7 +11,7 @@ from src.core.security import load_keys
 
 @pytest.fixture(autouse=True, scope="session")
 def _load_jwt_keys():
-    """JWT signing needs real keys loaded; sign-up/sign-in flows exercise them."""
+    """JWT signing needs real keys loaded; sign-in/refresh flows exercise them."""
     load_keys()
 
 

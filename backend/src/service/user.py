@@ -1,7 +1,9 @@
+from asyncpg.exceptions import ForeignKeyViolationError, UniqueViolationError
 from fastapi import HTTPException, status
 
+from src.core.security import hash_password
 from src.repository.user import UserRepository
-from src.schemas.user import UserProfile
+from src.schemas.user import ClientCreate, ClientProfileUpdate, UserProfile
 
 
 class UserService:
@@ -40,3 +42,34 @@ class UserService:
         deleted = await self.repository.delete(user_id)
         if not deleted:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Пользователь не найден")
+
+    # ── Администрирование B2B-клиентов ───────────────────
+
+    async def create_client(self, request: ClientCreate) -> UserProfile:
+        hashed = hash_password(request.password)
+        try:
+            user = await self.repository.create_client(
+                email=request.email,
+                password_hash=hashed,
+                company_name=request.company_name,
+                contact_name=request.contact_name,
+                cooperation_type=request.cooperation_type.value if request.cooperation_type else None,
+                price_group_id=request.price_group_id,
+            )
+        except UniqueViolationError as e:
+            raise HTTPException(status.HTTP_409_CONFLICT, "Email уже зарегистрирован") from e
+        except ForeignKeyViolationError as e:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Указанная ценовая группа не существует") from e
+        return UserProfile(**dict(user))
+
+    async def update_client_profile(self, user_id: int, request: ClientProfileUpdate) -> UserProfile:
+        fields = request.model_dump(exclude_unset=True)
+        if "cooperation_type" in fields and fields["cooperation_type"] is not None:
+            fields["cooperation_type"] = fields["cooperation_type"].value
+        try:
+            user = await self.repository.update_profile(user_id, fields)
+        except ForeignKeyViolationError as e:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Указанная ценовая группа не существует") from e
+        if not user:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Пользователь не найден")
+        return UserProfile(**dict(user))

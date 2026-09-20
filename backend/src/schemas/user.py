@@ -1,12 +1,18 @@
 import datetime as dt
 from enum import Enum
 
-from pydantic import BaseModel, EmailStr, model_validator
+from pydantic import BaseModel, EmailStr, Field, model_validator
 
 
 class UserRole(str, Enum):
     USER = "user"
     ADMIN = "admin"
+
+
+class CooperationType(str, Enum):
+    BUYOUT = "buyout"          # выкуп
+    CONSIGNMENT = "consignment"  # реализация
+    CUSTOM = "custom"          # индивидуальные условия
 
 
 class UserProfile(BaseModel):
@@ -15,6 +21,10 @@ class UserProfile(BaseModel):
     is_active: bool
     role: UserRole
     created_at: dt.datetime
+    company_name: str | None = None
+    contact_name: str | None = None
+    cooperation_type: CooperationType | None = None
+    price_group_id: int | None = None
 
 
 class UserUpdate(BaseModel):
@@ -33,3 +43,21 @@ class UserRoleUpdate(BaseModel):
 
 class UserActiveUpdate(BaseModel):
     is_active: bool
+
+
+class ClientCreate(BaseModel):
+    """Создание клиента администратором — самостоятельная регистрация клиентам недоступна."""
+
+    email: EmailStr
+    password: str = Field(min_length=8)
+    company_name: str | None = None
+    contact_name: str | None = None
+    cooperation_type: CooperationType | None = None
+    price_group_id: int | None = None
+
+
+class ClientProfileUpdate(BaseModel):
+    company_name: str | None = None
+    contact_name: str | None = None
+    cooperation_type: CooperationType | None = None
+    price_group_id: int | None = None

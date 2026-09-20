@@ -10,9 +10,18 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from src.core.security import decode_access_token
 from src.db import pool as db_pool_module
+from src.repository.category import CategoryRepository
+from src.repository.group_price import GroupPriceRepository
+from src.repository.price_group import PriceGroupRepository
+from src.repository.product import ProductRepository
 from src.repository.user import UserRepository
+from src.repository.user_price import UserPriceRepository
 from src.service.auth import AuthService
+from src.service.category import CategoryService
+from src.service.price_group import PriceGroupService
+from src.service.product import ProductService
 from src.service.user import UserService
+from src.service.user_price import UserPriceService
 
 security_scheme = HTTPBearer()
 
@@ -68,6 +77,36 @@ async def get_user_repository(
     return UserRepository(conn)
 
 
+async def get_category_repository(
+    conn: Annotated[asyncpg.Connection, Depends(get_db)],
+) -> CategoryRepository:
+    return CategoryRepository(conn)
+
+
+async def get_product_repository(
+    conn: Annotated[asyncpg.Connection, Depends(get_db)],
+) -> ProductRepository:
+    return ProductRepository(conn)
+
+
+async def get_price_group_repository(
+    conn: Annotated[asyncpg.Connection, Depends(get_db)],
+) -> PriceGroupRepository:
+    return PriceGroupRepository(conn)
+
+
+async def get_group_price_repository(
+    conn: Annotated[asyncpg.Connection, Depends(get_db)],
+) -> GroupPriceRepository:
+    return GroupPriceRepository(conn)
+
+
+async def get_user_price_repository(
+    conn: Annotated[asyncpg.Connection, Depends(get_db)],
+) -> UserPriceRepository:
+    return UserPriceRepository(conn)
+
+
 # ── Сервисы ──────────────────────────────────────────────
 
 
@@ -82,3 +121,28 @@ async def get_user_service(
     repo: Annotated[UserRepository, Depends(get_user_repository)],
 ) -> UserService:
     return UserService(repo)
+
+
+async def get_category_service(
+    repo: Annotated[CategoryRepository, Depends(get_category_repository)],
+) -> CategoryService:
+    return CategoryService(repo)
+
+
+async def get_product_service(
+    repo: Annotated[ProductRepository, Depends(get_product_repository)],
+) -> ProductService:
+    return ProductService(repo)
+
+
+async def get_price_group_service(
+    repo: Annotated[PriceGroupRepository, Depends(get_price_group_repository)],
+    group_price_repo: Annotated[GroupPriceRepository, Depends(get_group_price_repository)],
+) -> PriceGroupService:
+    return PriceGroupService(repo, group_price_repo)
+
+
+async def get_user_price_service(
+    repo: Annotated[UserPriceRepository, Depends(get_user_price_repository)],
+) -> UserPriceService:
+    return UserPriceService(repo)
