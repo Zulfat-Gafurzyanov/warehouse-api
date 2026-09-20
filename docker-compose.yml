@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mydb
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mydb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+
+  bot:
+    build: ./bot
+    env_file:
+      - ./bot/.env
+    ports:
+      - "8100:8100"
+
+  backend:
+    build: ./backend
+    env_file:
+      - ./backend/.env
+    environment:
+      # Внутри docker-сети сервисы обращаются друг к другу по имени сервиса,
+      # а не по localhost/хост-портам из .env (те нужны для локального запуска через venv).
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mydb
+      DATABASE_URL_SQLALCHEMY: postgresql+asyncpg://postgres:postgres@postgres:5432/mydb
+      REDIS_URL: redis://redis:6379/0
+      BOT_SERVICE_URL: http://bot:8100
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      bot:
+        condition: service_started
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata:
+  redisdata:
