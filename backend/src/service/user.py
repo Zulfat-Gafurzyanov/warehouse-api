@@ -68,6 +68,8 @@ class UserService:
             fields["cooperation_type"] = fields["cooperation_type"].value
         try:
             user = await self.repository.update_profile(user_id, fields)
+        except UniqueViolationError as e:
+            raise HTTPException(status.HTTP_409_CONFLICT, "Email уже используется другим пользователем") from e
         except ForeignKeyViolationError as e:
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Указанная ценовая группа не существует") from e
         if not user:

@@ -61,6 +61,17 @@ class ProductService:
         products = await self.repository.get_admin_all(limit, offset, category_id, search)
         return [await self._to_admin_out(p) for p in products]
 
+    async def delete(self, product_id: int) -> None:
+        try:
+            deleted = await self.repository.delete(product_id)
+        except ForeignKeyViolationError as e:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                "Нельзя удалить товар: он есть в заказах — скройте его вместо удаления",
+            ) from e
+        if not deleted:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Товар не найден")
+
     async def _to_admin_out(self, product) -> ProductAdminOut:
         images = await self.repository.get_images(product["id"])
         return ProductAdminOut(

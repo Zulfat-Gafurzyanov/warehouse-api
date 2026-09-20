@@ -9,7 +9,8 @@ export function PriceGroupsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [createOpen, setCreateOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<"create" | "edit" | null>(null);
+  const [editingGroup, setEditingGroup] = useState<PriceGroup | null>(null);
   const [name, setName] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -27,17 +28,34 @@ export function PriceGroupsPage() {
 
   useEffect(load, []);
 
-  async function handleCreate(e: FormEvent) {
+  function openCreate() {
+    setEditingGroup(null);
+    setName("");
+    setFormError(null);
+    setModalMode("create");
+  }
+
+  function openEdit(group: PriceGroup) {
+    setEditingGroup(group);
+    setName(group.name);
+    setFormError(null);
+    setModalMode("edit");
+  }
+
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     setFormError(null);
     try {
-      await api.post("/admin/price-groups", { name });
-      setCreateOpen(false);
-      setName("");
+      if (modalMode === "edit" && editingGroup) {
+        await api.patch(`/admin/price-groups/${editingGroup.id}`, { name });
+      } else {
+        await api.post("/admin/price-groups", { name });
+      }
+      setModalMode(null);
       load();
     } catch (e) {
-      setFormError(e instanceof ApiError ? e.message : "Не удалось создать группу");
+      setFormError(e instanceof ApiError ? e.message : "Не удалось сохранить группу");
     } finally {
       setSubmitting(false);
     }
@@ -60,7 +78,7 @@ export function PriceGroupsPage() {
           <h1>Ценовые группы</h1>
           <div className="page-header__sub">Опт1, Опт2, VIP и т.д. — быстрое назначение цен группе клиентов</div>
         </div>
-        <button className="btn" onClick={() => setCreateOpen(true)}>
+        <button className="btn" onClick={openCreate}>
           + Новая группа
         </button>
       </div>
@@ -91,6 +109,9 @@ export function PriceGroupsPage() {
                       <button className="btn btn--outline btn--sm" onClick={() => setPricesGroup(g)}>
                         Цены товаров
                       </button>
+                      <button className="btn btn--outline btn--sm" onClick={() => openEdit(g)}>
+                        Изменить
+                      </button>
                       <button className="btn btn--danger btn--sm" onClick={() => handleDelete(g)}>
                         Удалить
                       </button>
@@ -103,9 +124,12 @@ export function PriceGroupsPage() {
         )}
       </div>
 
-      {createOpen && (
-        <Modal title="Новая ценовая группа" onClose={() => setCreateOpen(false)}>
-          <form onSubmit={handleCreate}>
+      {modalMode && (
+        <Modal
+          title={modalMode === "edit" ? "Изменить ценовую группу" : "Новая ценовая группа"}
+          onClose={() => setModalMode(null)}
+        >
+          <form onSubmit={handleSubmit}>
             <label className="form-field">
               Название
               <input value={name} onChange={(e) => setName(e.target.value)} required autoFocus />
@@ -114,11 +138,11 @@ export function PriceGroupsPage() {
             {formError && <p className="form-error">{formError}</p>}
 
             <div className="modal__footer">
-              <button type="button" className="btn btn--outline" onClick={() => setCreateOpen(false)}>
+              <button type="button" className="btn btn--outline" onClick={() => setModalMode(null)}>
                 Отмена
               </button>
               <button type="submit" className="btn" disabled={submitting}>
-                {submitting ? "Создание..." : "Создать"}
+                {submitting ? "Сохранение..." : "Сохранить"}
               </button>
             </div>
           </form>

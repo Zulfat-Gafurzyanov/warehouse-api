@@ -80,3 +80,11 @@ async def update_product(
     product_service: Annotated[ProductService, Depends(get_product_service)],
 ) -> ProductAdminOut:
     return await product_service.update(product_id, body)
+
+
+@router.delete("/products/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_product(
+    product_id: int,
+    product_service: Annotated[ProductService, Depends(get_product_service)],
+) -> None:
+    await product_service.delete(product_id)

@@ -3,7 +3,13 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 
 from src.api.deps import get_current_admin, get_price_group_service, get_user_price_service
-from src.schemas.price_group import GroupPriceOut, GroupPriceSet, PriceGroupCreate, PriceGroupOut
+from src.schemas.price_group import (
+    GroupPriceOut,
+    GroupPriceSet,
+    PriceGroupCreate,
+    PriceGroupOut,
+    PriceGroupUpdate,
+)
 from src.schemas.user_price import UserPriceOut, UserPriceSet
 from src.service.price_group import PriceGroupService
 from src.service.user_price import UserPriceService
@@ -31,6 +37,15 @@ async def list_price_groups(
     price_group_service: Annotated[PriceGroupService, Depends(get_price_group_service)],
 ) -> list[PriceGroupOut]:
     return await price_group_service.get_all()
+
+
+@router.patch("/price-groups/{price_group_id}")
+async def update_price_group(
+    price_group_id: int,
+    body: PriceGroupUpdate,
+    price_group_service: Annotated[PriceGroupService, Depends(get_price_group_service)],
+) -> PriceGroupOut:
+    return await price_group_service.update_name(price_group_id, body.name)
 
 
 @router.delete("/price-groups/{price_group_id}", status_code=status.HTTP_204_NO_CONTENT)

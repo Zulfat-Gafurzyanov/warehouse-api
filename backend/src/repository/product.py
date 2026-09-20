@@ -73,6 +73,10 @@ class ProductRepository:
                 [(product_id, url, i) for i, url in enumerate(image_urls)],
             )
 
+    async def delete(self, product_id: int) -> bool:
+        result = await self.conn.execute("DELETE FROM product WHERE id = $1", product_id)
+        return result == "DELETE 1"
+
     # ── Чтение (админ) ────────────────────────────────────
 
     async def get_admin_by_id(self, product_id: int) -> asyncpg.Record | None:

@@ -57,6 +57,7 @@ class ClientCreate(BaseModel):
 
 
 class ClientProfileUpdate(BaseModel):
+    email: EmailStr | None = None
     company_name: str | None = None
     contact_name: str | None = None
     cooperation_type: CooperationType | None = None

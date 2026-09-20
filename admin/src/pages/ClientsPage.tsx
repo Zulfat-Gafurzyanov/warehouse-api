@@ -14,6 +14,7 @@ import { Modal } from "../components/Modal";
 import { formatPrice } from "../utils/format";
 
 interface ProfileFormState {
+  email: string;
   company_name: string;
   contact_name: string;
   cooperation_type: CooperationType | "";
@@ -21,7 +22,6 @@ interface ProfileFormState {
 }
 
 interface CreateFormState extends ProfileFormState {
-  email: string;
   password: string;
 }
 
@@ -48,6 +48,7 @@ export function ClientsPage() {
 
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [profileForm, setProfileForm] = useState<ProfileFormState>({
+    email: "",
     company_name: "",
     contact_name: "",
     cooperation_type: "",
@@ -118,6 +119,7 @@ export function ClientsPage() {
   function openEditProfile(user: UserProfile) {
     setEditingUser(user);
     setProfileForm({
+      email: user.email,
       company_name: user.company_name ?? "",
       contact_name: user.contact_name ?? "",
       cooperation_type: user.cooperation_type ?? "",
@@ -133,6 +135,7 @@ export function ClientsPage() {
     setProfileError(null);
     try {
       const body: ClientProfileUpdateInput = {
+        email: profileForm.email,
         company_name: profileForm.company_name || null,
         contact_name: profileForm.contact_name || null,
         cooperation_type: profileForm.cooperation_type || null,
@@ -288,6 +291,16 @@ export function ClientsPage() {
       {editingUser && (
         <Modal title={`Профиль: ${editingUser.email}`} onClose={() => setEditingUser(null)}>
           <form onSubmit={handleProfileSubmit}>
+            <label className="form-field">
+              Email
+              <input
+                type="email"
+                value={profileForm.email}
+                onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                required
+              />
+            </label>
+
             <ProfileFields
               value={profileForm}
               onChange={(patch) => setProfileForm({ ...profileForm, ...patch })}

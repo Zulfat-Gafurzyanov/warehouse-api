@@ -22,6 +22,15 @@ class PriceGroupService:
         groups = await self.repository.get_all()
         return [PriceGroupOut(**dict(g)) for g in groups]
 
+    async def update_name(self, price_group_id: int, name: str) -> PriceGroupOut:
+        try:
+            group = await self.repository.update_name(price_group_id, name)
+        except UniqueViolationError as e:
+            raise HTTPException(status.HTTP_409_CONFLICT, "Ценовая группа с таким названием уже существует") from e
+        if not group:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Ценовая группа не найдена")
+        return PriceGroupOut(**dict(group))
+
     async def delete(self, price_group_id: int) -> None:
         try:
             deleted = await self.repository.delete(price_group_id)

@@ -111,6 +111,7 @@ export function ProductsPage() {
     try {
       if (editingProduct) {
         const body: ProductUpdateInput = {
+          sku: form.sku,
           name: form.name,
           category_id: Number(form.category_id),
           description: form.description || null,
@@ -151,6 +152,16 @@ export function ProductsPage() {
       load();
     } catch (e) {
       alert(e instanceof ApiError ? e.message : "Не удалось изменить статус товара");
+    }
+  }
+
+  async function handleDelete(product: ProductAdmin) {
+    if (!confirm(`Удалить товар «${product.name}»? Это необратимо.`)) return;
+    try {
+      await api.delete(`/admin/products/${product.id}`);
+      load();
+    } catch (e) {
+      alert(e instanceof ApiError ? e.message : "Не удалось удалить товар");
     }
   }
 
@@ -229,6 +240,9 @@ export function ProductsPage() {
                       <button className="btn btn--outline btn--sm" onClick={() => openEdit(p)}>
                         Изменить
                       </button>
+                      <button className="btn btn--danger btn--sm" onClick={() => handleDelete(p)}>
+                        Удалить
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -252,7 +266,6 @@ export function ProductsPage() {
                   value={form.sku}
                   onChange={(e) => setForm({ ...form, sku: e.target.value })}
                   required
-                  disabled={!!editingProduct}
                 />
               </label>
               <label className="form-field">

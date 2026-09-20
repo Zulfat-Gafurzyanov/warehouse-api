@@ -15,6 +15,10 @@ class PriceGroupCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
 
 
+class PriceGroupUpdate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+
+
 class GroupPriceSet(BaseModel):
     price: Decimal = Field(gt=0)
 

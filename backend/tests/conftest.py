@@ -1,5 +1,5 @@
 from collections.abc import AsyncGenerator
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import pytest_asyncio
@@ -23,6 +23,16 @@ def mock_db_conn():
     conn.fetch = AsyncMock(return_value=[])
     conn.fetchval = AsyncMock(return_value=None)
     conn.execute = AsyncMock(return_value="OK")
+    conn.executemany = AsyncMock(return_value=None)
+
+    # conn.transaction() is sync in real asyncpg and returns an object usable
+    # as an async context manager — AsyncMock would make the call itself async,
+    # which breaks `async with conn.transaction():`. Model it explicitly.
+    transaction_cm = MagicMock()
+    transaction_cm.__aenter__ = AsyncMock(return_value=None)
+    transaction_cm.__aexit__ = AsyncMock(return_value=False)
+    conn.transaction = MagicMock(return_value=transaction_cm)
+
     return conn
 
 

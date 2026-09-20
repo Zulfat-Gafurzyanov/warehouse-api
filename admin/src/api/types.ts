@@ -40,6 +40,7 @@ export interface ProductCreateInput {
 }
 
 export interface ProductUpdateInput {
+  sku?: string;
   name?: string;
   category_id?: number;
   description?: string | null;
@@ -82,6 +83,7 @@ export interface ClientCreateInput {
 }
 
 export interface ClientProfileUpdateInput {
+  email?: string;
   company_name?: string | null;
   contact_name?: string | null;
   cooperation_type?: CooperationType | null;
