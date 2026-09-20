@@ -32,6 +32,16 @@ export interface ProductDetail {
   images: ProductImage[];
 }
 
+/** Минимальная форма, достаточная для добавления в корзину — удовлетворяется и ProductListItem,
+ *  и карточкой товара, собранной на странице деталей товара. */
+export interface CartableProduct {
+  id: number;
+  name: string;
+  price: string;
+  stock: number;
+  image_url: string | null;
+}
+
 export interface TokenPair {
   access_token: string;
   refresh_token: string;
@@ -56,4 +66,22 @@ export interface OrderOut {
   items: OrderItemOut[];
 }
 
+export interface OrderListItem {
+  id: number;
+  user_id: number;
+  status: string;
+  total_amount: string;
+  item_count: number;
+  created_at: string;
+}
+
 export type SortOption = "default" | "price_asc" | "price_desc" | "new";
+
+export const ORDER_STATUS_LABELS: Record<string, string> = {
+  new: "Новый",
+  confirmed: "Подтверждён",
+  processing: "Собирается",
+  ready: "Готов",
+  delivered: "Доставлен",
+  cancelled: "Отменён",
+};

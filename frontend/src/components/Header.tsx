@@ -1,3 +1,4 @@
+import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import "./Header.css";
@@ -35,8 +36,15 @@ export function Header({ onCartClick }: HeaderProps) {
         </div>
 
         <nav className="header__nav">
-          <a href="#">Каталог</a>
-          <a href="#">Мои заказы</a>
+          <NavLink to="/catalog" className={({ isActive }) => (isActive ? "active" : "")}>
+            Каталог
+          </NavLink>
+          <NavLink to="/orders" className={({ isActive }) => (isActive ? "active" : "")}>
+            Мои заказы
+          </NavLink>
+          <NavLink to="/favorites" className={({ isActive }) => (isActive ? "active" : "")}>
+            Избранное
+          </NavLink>
         </nav>
 
         <div className="header__actions">

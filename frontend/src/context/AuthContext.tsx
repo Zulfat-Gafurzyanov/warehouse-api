@@ -1,8 +1,9 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { api, ApiError, setAuthToken } from "../api/client";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { api, ApiError, setAuthToken, setUnauthorizedHandler } from "../api/client";
 import type { TokenPair } from "../api/types";
 
-const STORAGE_KEY = "warehouse.auth.token";
+const ACCESS_KEY = "warehouse.auth.access";
+const REFRESH_KEY = "warehouse.auth.refresh";
 
 interface AuthContextValue {
   token: string | null;
@@ -17,27 +18,59 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const refreshTokenRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      setAuthToken(stored);
-      setToken(stored);
-    }
-    setIsLoading(false);
-  }, []);
-
-  async function signIn(email: string, password: string) {
-    const tokens = await api.post<TokenPair>("/auth/sign-in", { email, password });
-    localStorage.setItem(STORAGE_KEY, tokens.access_token);
+  function persistTokens(tokens: TokenPair) {
+    localStorage.setItem(ACCESS_KEY, tokens.access_token);
+    localStorage.setItem(REFRESH_KEY, tokens.refresh_token);
+    refreshTokenRef.current = tokens.refresh_token;
     setAuthToken(tokens.access_token);
     setToken(tokens.access_token);
   }
 
-  function signOut() {
-    localStorage.removeItem(STORAGE_KEY);
+  function clearTokens() {
+    localStorage.removeItem(ACCESS_KEY);
+    localStorage.removeItem(REFRESH_KEY);
+    refreshTokenRef.current = null;
     setAuthToken(null);
     setToken(null);
+  }
+
+  useEffect(() => {
+    const storedAccess = localStorage.getItem(ACCESS_KEY);
+    const storedRefresh = localStorage.getItem(REFRESH_KEY);
+    if (storedAccess && storedRefresh) {
+      refreshTokenRef.current = storedRefresh;
+      setAuthToken(storedAccess);
+      setToken(storedAccess);
+    }
+    setIsLoading(false);
+
+    setUnauthorizedHandler(async () => {
+      if (!refreshTokenRef.current) return null;
+      try {
+        const tokens = await api.post<TokenPair>("/auth/refresh", {
+          refresh_token: refreshTokenRef.current,
+        });
+        persistTokens(tokens);
+        return tokens.access_token;
+      } catch {
+        clearTokens();
+        return null;
+      }
+    });
+
+    return () => setUnauthorizedHandler(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function signIn(email: string, password: string) {
+    const tokens = await api.post<TokenPair>("/auth/sign-in", { email, password });
+    persistTokens(tokens);
+  }
+
+  function signOut() {
+    clearTokens();
   }
 
   return (

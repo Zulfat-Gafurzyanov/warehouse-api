@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import type { ProductListItem } from "../api/types";
+import type { CartableProduct } from "../api/types";
 
 const STORAGE_KEY = "warehouse.cart.items";
 
@@ -16,7 +16,7 @@ interface CartContextValue {
   items: CartItem[];
   totalCount: number;
   totalAmount: number;
-  addItem: (product: ProductListItem, quantity?: number) => void;
+  addItem: (product: CartableProduct, quantity?: number) => void;
   removeItem: (productId: number) => void;
   setQuantity: (productId: number, quantity: number) => void;
   clear: () => void;
@@ -40,7 +40,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   }, [items]);
 
-  function addItem(product: ProductListItem, quantity = 1) {
+  function addItem(product: CartableProduct, quantity = 1) {
     setItems((prev) => {
       const existing = prev.find((i) => i.productId === product.id);
       if (existing) {

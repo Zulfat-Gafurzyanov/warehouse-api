@@ -10,9 +10,16 @@ export class ApiError extends Error {
 }
 
 let authToken: string | null = null;
+let unauthorizedHandler: (() => Promise<string | null>) | null = null;
 
 export function setAuthToken(token: string | null) {
   authToken = token;
+}
+
+/** Вызывается при 401 — должен попытаться обновить сессию по refresh-токену
+ *  и вернуть новый access-токен, либо null, если обновить не удалось. */
+export function setUnauthorizedHandler(handler: (() => Promise<string | null>) | null) {
+  unauthorizedHandler = handler;
 }
 
 interface RequestOptions {
@@ -20,7 +27,9 @@ interface RequestOptions {
   body?: unknown;
 }
 
-async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+const AUTH_PATHS = new Set(["/auth/sign-in", "/auth/refresh"]);
+
+async function request<T>(path: string, options: RequestOptions = {}, isRetry = false): Promise<T> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (authToken) {
     headers["Authorization"] = `Bearer ${authToken}`;
@@ -31,6 +40,13 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     headers,
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
   });
+
+  if (response.status === 401 && !isRetry && !AUTH_PATHS.has(path) && unauthorizedHandler) {
+    const newToken = await unauthorizedHandler();
+    if (newToken) {
+      return request<T>(path, options, true);
+    }
+  }
 
   if (response.status === 204) {
     return undefined as T;
@@ -51,6 +67,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, body?: unknown) => request<T>(path, { method: "POST", body }),
+  put: <T>(path: string, body?: unknown) => request<T>(path, { method: "PUT", body }),
   patch: <T>(path: string, body?: unknown) => request<T>(path, { method: "PATCH", body }),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 };

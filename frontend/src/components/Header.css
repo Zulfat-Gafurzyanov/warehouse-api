@@ -39,6 +39,11 @@
   color: var(--color-text-muted);
 }
 
+.header__nav a.active {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
 .header__nav a:hover {
   color: var(--color-text);
 }
