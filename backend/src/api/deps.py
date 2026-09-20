@@ -8,6 +8,7 @@ import redis.asyncio as redis
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from src.core.config import settings
 from src.core.security import decode_access_token
 from src.db import pool as db_pool_module
 from src.repository.category import CategoryRepository
@@ -23,6 +24,7 @@ from src.service.category import CategoryService
 from src.service.favorite import FavoriteService
 from src.service.order import OrderService
 from src.service.price_group import PriceGroupService
+from src.service.notification_client import NotificationClient
 from src.service.product import ProductService
 from src.service.user import UserService
 from src.service.user_price import UserPriceService
@@ -41,6 +43,13 @@ async def get_db() -> AsyncGenerator[asyncpg.Connection, None]:
 
 def get_redis() -> redis.Redis:
     return redis_client
+
+
+def get_notification_client() -> NotificationClient:
+    return NotificationClient(
+        base_url=settings.BOT_SERVICE_URL,
+        internal_token=settings.INTERNAL_API_TOKEN,
+    )
 
 
 # ── Аутентификация ───────────────────────────────────────

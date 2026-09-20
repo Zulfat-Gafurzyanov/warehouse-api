@@ -35,5 +35,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_LIFETIME: int = 3600  # 1 hour
     REFRESH_TOKEN_LIFETIME: int = 604800  # 7 days
 
+    # ── Уведомления о новых заказах (отдельный bot-сервис, см. /bot) ────
+    # Пусто по умолчанию — уведомления просто не отправляются, если сервис не настроен.
+    BOT_SERVICE_URL: str = ""
+    # Общий секрет с bot-сервисом (совпадает с INTERNAL_API_TOKEN в bot/.env).
+    INTERNAL_API_TOKEN: str = ""
+
 
 settings = Settings()
