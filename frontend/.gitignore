@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 .env
+proc_id.txt
+vite_out.log
+vite_err.log
 
 # Editor directories and files
 .vscode/*
