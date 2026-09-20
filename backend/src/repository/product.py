@@ -142,3 +142,36 @@ class ProductRepository:
             """,
             user_id, limit, offset, category_id, search,
         )
+
+    async def get_favorites(self, user_id: int, limit: int, offset: int) -> list[asyncpg.Record]:
+        return await self.conn.fetch(
+            f"""
+            SELECT p.id, p.sku, p.name, p.category_id, p.stock, p.is_new,
+                   COALESCE(up.price, gp.price, p.base_price) AS price,
+                   (
+                       SELECT pi.url FROM product_image pi
+                       WHERE pi.product_id = p.id
+                       ORDER BY pi.sort_order LIMIT 1
+                   ) AS image_url
+            FROM favorite f
+            JOIN product p ON p.id = f.product_id
+            {_CLIENT_PRICE_JOIN}
+            WHERE f.user_id = $1 AND p.is_active = true
+            ORDER BY f.created_at DESC
+            LIMIT $2 OFFSET $3
+            """,
+            user_id, limit, offset,
+        )
+
+    async def get_prices_for_order(self, user_id: int, product_ids: list[int]) -> list[asyncpg.Record]:
+        """Резолв цены/остатка под конкретного клиента для набора товаров — используется при оформлении заказа."""
+        return await self.conn.fetch(
+            f"""
+            SELECT p.id, p.name, p.sku, p.stock, p.is_active,
+                   COALESCE(up.price, gp.price, p.base_price) AS price
+            FROM product p
+            {_CLIENT_PRICE_JOIN}
+            WHERE p.id = ANY($2::bigint[])
+            """,
+            user_id, product_ids,
+        )

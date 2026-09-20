@@ -11,13 +11,17 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from src.core.security import decode_access_token
 from src.db import pool as db_pool_module
 from src.repository.category import CategoryRepository
+from src.repository.favorite import FavoriteRepository
 from src.repository.group_price import GroupPriceRepository
+from src.repository.order import OrderRepository
 from src.repository.price_group import PriceGroupRepository
 from src.repository.product import ProductRepository
 from src.repository.user import UserRepository
 from src.repository.user_price import UserPriceRepository
 from src.service.auth import AuthService
 from src.service.category import CategoryService
+from src.service.favorite import FavoriteService
+from src.service.order import OrderService
 from src.service.price_group import PriceGroupService
 from src.service.product import ProductService
 from src.service.user import UserService
@@ -107,6 +111,18 @@ async def get_user_price_repository(
     return UserPriceRepository(conn)
 
 
+async def get_favorite_repository(
+    conn: Annotated[asyncpg.Connection, Depends(get_db)],
+) -> FavoriteRepository:
+    return FavoriteRepository(conn)
+
+
+async def get_order_repository(
+    conn: Annotated[asyncpg.Connection, Depends(get_db)],
+) -> OrderRepository:
+    return OrderRepository(conn)
+
+
 # ── Сервисы ──────────────────────────────────────────────
 
 
@@ -146,3 +162,17 @@ async def get_user_price_service(
     repo: Annotated[UserPriceRepository, Depends(get_user_price_repository)],
 ) -> UserPriceService:
     return UserPriceService(repo)
+
+
+async def get_favorite_service(
+    repo: Annotated[FavoriteRepository, Depends(get_favorite_repository)],
+    product_repo: Annotated[ProductRepository, Depends(get_product_repository)],
+) -> FavoriteService:
+    return FavoriteService(repo, product_repo)
+
+
+async def get_order_service(
+    repo: Annotated[OrderRepository, Depends(get_order_repository)],
+    product_repo: Annotated[ProductRepository, Depends(get_product_repository)],
+) -> OrderService:
+    return OrderService(repo, product_repo)
