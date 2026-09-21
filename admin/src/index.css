@@ -294,11 +294,14 @@ table.data-table {
   font-size: 13px;
   color: var(--color-text-muted);
   margin-bottom: 16px;
+  min-width: 0;
 }
 
 .form-field input,
 .form-field select,
 .form-field textarea {
+  width: 100%;
+  min-width: 0;
   padding: 9px 11px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -427,6 +430,13 @@ table.data-table {
   border-radius: var(--radius-sm);
   font-size: 13px;
   background: #fff;
+}
+
+.toolbar input[type="search"],
+.toolbar input[type="text"] {
+  flex: 1;
+  min-width: 240px;
+  max-width: 360px;
 }
 
 .toolbar__spacer {
