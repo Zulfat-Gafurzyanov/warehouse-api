@@ -21,10 +21,11 @@
 }
 
 .login-card__logo {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
   color: var(--color-primary);
   text-align: center;
+  line-height: 1.25;
 }
 
 .login-card__subtitle {

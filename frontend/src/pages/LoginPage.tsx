@@ -28,7 +28,7 @@ export function LoginPage() {
   return (
     <div className="login-page">
       <form className="login-card" onSubmit={handleSubmit}>
-        <div className="login-card__logo">warehouse.</div>
+        <div className="login-card__logo">От души из Владивостока</div>
         <p className="login-card__subtitle">Вход для оптовых клиентов</p>
 
         <label className="login-field">

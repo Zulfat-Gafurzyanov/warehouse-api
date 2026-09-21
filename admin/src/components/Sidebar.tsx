@@ -20,8 +20,8 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar__logo">
-        warehouse<strong>.</strong>
-        <span>CRM</span>
+        <span className="sidebar__logo-brand">От души из Владивостока</span>
+        <span className="sidebar__logo-tag">CRM</span>
       </div>
 
       <nav className="sidebar-nav">

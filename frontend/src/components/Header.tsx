@@ -34,9 +34,7 @@ export function Header({ onCartClick }: HeaderProps) {
             />
             <path d="M12 13v7.5" stroke="currentColor" strokeWidth="1.6" />
           </svg>
-          <span>
-            warehouse<strong>.</strong>
-          </span>
+          <span>От души из Владивостока</span>
         </div>
 
         <nav className="header__nav">
