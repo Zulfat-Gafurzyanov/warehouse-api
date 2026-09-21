@@ -211,7 +211,10 @@ function GroupPricesModal({ group, onClose }: { group: PriceGroup; onClose: () =
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
-    if (!productId || !price) return;
+    if (!productId || !price) {
+      setFormError("Выберите товар и укажите цену");
+      return;
+    }
     setSubmitting(true);
     setFormError(null);
     try {
@@ -293,7 +296,7 @@ function GroupPricesModal({ group, onClose }: { group: PriceGroup; onClose: () =
           <form onSubmit={handleAdd} className="form-row" style={{ alignItems: "flex-end" }}>
             <label className="form-field">
               Товар
-              <select value={productId} onChange={(e) => setProductId(e.target.value)} required>
+              <select value={productId} onChange={(e) => setProductId(e.target.value)}>
                 <option value="" disabled>
                   Выберите товар
                 </option>
@@ -313,7 +316,6 @@ function GroupPricesModal({ group, onClose }: { group: PriceGroup; onClose: () =
                 step="0.01"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                required
               />
             </label>
             <button type="submit" className="btn" disabled={submitting} style={{ marginBottom: 16 }}>
