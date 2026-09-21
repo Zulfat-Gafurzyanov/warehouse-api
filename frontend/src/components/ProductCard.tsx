@@ -57,6 +57,9 @@ export function ProductCard({
       </Link>
 
       <div className="product-card__price">{formatPrice(product.price)}</div>
+      <div className={`product-card__stock ${outOfStock ? "product-card__stock--out" : ""}`}>
+        {outOfStock ? "Нет в наличии" : `В наличии: ${product.stock} шт.`}
+      </div>
 
       <button
         className="btn product-card__btn"

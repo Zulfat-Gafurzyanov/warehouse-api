@@ -86,6 +86,16 @@
   color: var(--color-text);
 }
 
+.product-card__stock {
+  font-size: 12px;
+  color: var(--color-primary);
+  margin-top: -6px;
+}
+
+.product-card__stock--out {
+  color: var(--color-danger);
+}
+
 .product-card__btn {
   width: 100%;
 }
