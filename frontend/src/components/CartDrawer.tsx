@@ -130,7 +130,25 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
                         >
                           −
                         </button>
-                        <span>{item.quantity}</span>
+                        <input
+                          type="number"
+                          className="cart-drawer__qty-input"
+                          min={1}
+                          max={item.stock}
+                          value={item.quantity}
+                          onChange={(e) => {
+                            const n = e.target.valueAsNumber;
+                            if (Number.isNaN(n)) return;
+                            setQuantity(item.productId, Math.trunc(n));
+                          }}
+                          onBlur={(e) => {
+                            if (e.target.value.trim() === "") {
+                              setQuantity(item.productId, item.quantity);
+                            }
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          aria-label="Количество"
+                        />
                         <button
                           onClick={() => setQuantity(item.productId, item.quantity + 1)}
                           disabled={item.quantity >= item.stock}

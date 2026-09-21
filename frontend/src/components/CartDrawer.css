@@ -168,6 +168,23 @@
   text-align: center;
 }
 
+.cart-drawer__qty-input {
+  width: 34px;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  text-align: center;
+  color: var(--color-text);
+  -moz-appearance: textfield;
+}
+
+.cart-drawer__qty-input::-webkit-outer-spin-button,
+.cart-drawer__qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .cart-drawer__item-price {
   font-size: 13px;
   font-weight: 700;

@@ -171,6 +171,24 @@
   font-weight: 600;
 }
 
+.product-detail__qty-input {
+  width: 48px;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--color-text);
+  -moz-appearance: textfield;
+}
+
+.product-detail__qty-input::-webkit-outer-spin-button,
+.product-detail__qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .product-detail__actions {
   display: flex;
   gap: 12px;

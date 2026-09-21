@@ -117,7 +117,23 @@ export function ProductDetailPage() {
               <span>Количество:</span>
               <div className="product-detail__stepper">
                 <button onClick={() => setQuantity((q) => Math.max(1, q - 1))}>−</button>
-                <span>{quantity}</span>
+                <input
+                  type="number"
+                  className="product-detail__qty-input"
+                  min={1}
+                  max={product.stock}
+                  value={quantity}
+                  onChange={(e) => {
+                    const n = e.target.valueAsNumber;
+                    if (Number.isNaN(n)) return;
+                    setQuantity(Math.min(Math.max(Math.trunc(n), 1), product.stock));
+                  }}
+                  onBlur={(e) => {
+                    if (e.target.value.trim() === "") setQuantity(1);
+                  }}
+                  onFocus={(e) => e.target.select()}
+                  aria-label="Количество"
+                />
                 <button onClick={() => setQuantity((q) => Math.min(product.stock, q + 1))}>+</button>
               </div>
             </div>
