@@ -1,7 +1,7 @@
 import asyncpg
 
 _PROFILE_COLUMNS = """
-    id, email, is_active, created_at, role,
+    id, login, is_active, created_at, role,
     company_name, contact_name, cooperation_type, price_group_id
 """
 
@@ -12,7 +12,7 @@ class UserRepository:
 
     async def create_client(
         self,
-        email: str,
+        login: str,
         password_hash: str,
         company_name: str | None,
         contact_name: str | None,
@@ -22,11 +22,11 @@ class UserRepository:
         """Создание клиента администратором — со всеми B2B-реквизитами сразу."""
         return await self.conn.fetchrow(
             f"""
-            INSERT INTO "user" (email, password_hash, company_name, contact_name, cooperation_type, price_group_id)
+            INSERT INTO "user" (login, password_hash, company_name, contact_name, cooperation_type, price_group_id)
             VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING {_PROFILE_COLUMNS}
             """,
-            email, password_hash, company_name, contact_name, cooperation_type, price_group_id,
+            login, password_hash, company_name, contact_name, cooperation_type, price_group_id,
         )
 
     async def get_all(self, limit: int, offset: int) -> list[asyncpg.Record]:
@@ -51,28 +51,40 @@ class UserRepository:
             user_id,
         )
 
-    async def get_by_email(self, email: str) -> asyncpg.Record | None:
+    async def get_by_login(self, login: str) -> asyncpg.Record | None:
         return await self.conn.fetchrow(
             f"""
             SELECT {_PROFILE_COLUMNS}, password_hash
             FROM "user"
-            WHERE email = $1
+            WHERE login = $1
             """,
-            email,
+            login,
         )
 
-    async def update_email(
-        self, user_id: int, email: str
+    async def update_login(
+        self, user_id: int, login: str
     ) -> asyncpg.Record | None:
         return await self.conn.fetchrow(
             f"""
             UPDATE "user"
-            SET email = $2, updated_at = NOW()
+            SET login = $2, updated_at = NOW()
             WHERE id = $1
             RETURNING {_PROFILE_COLUMNS}
             """,
             user_id,
-            email,
+            login,
+        )
+
+    async def update_password(self, user_id: int, password_hash: str) -> asyncpg.Record | None:
+        return await self.conn.fetchrow(
+            f"""
+            UPDATE "user"
+            SET password_hash = $2, updated_at = NOW()
+            WHERE id = $1
+            RETURNING {_PROFILE_COLUMNS}
+            """,
+            user_id,
+            password_hash,
         )
 
     async def update_profile(self, user_id: int, fields: dict) -> asyncpg.Record | None:

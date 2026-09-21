@@ -63,7 +63,7 @@ export const COOPERATION_LABELS: Record<CooperationType, string> = {
 
 export interface UserProfile {
   id: number;
-  email: string;
+  login: string;
   is_active: boolean;
   role: UserRole;
   created_at: string;
@@ -74,7 +74,7 @@ export interface UserProfile {
 }
 
 export interface ClientCreateInput {
-  email: string;
+  login: string;
   password: string;
   company_name?: string | null;
   contact_name?: string | null;
@@ -83,11 +83,15 @@ export interface ClientCreateInput {
 }
 
 export interface ClientProfileUpdateInput {
-  email?: string;
+  login?: string;
   company_name?: string | null;
   contact_name?: string | null;
   cooperation_type?: CooperationType | null;
   price_group_id?: number | null;
+}
+
+export interface PasswordResetInput {
+  password: string;
 }
 
 export interface PriceGroup {
@@ -202,10 +206,22 @@ export interface TopProduct {
 
 export interface TopClient {
   user_id: number;
-  email: string;
+  login: string;
   company_name: string | null;
   revenue: string;
   orders_count: number;
+}
+
+export interface ClientStats {
+  orders_count: number;
+  total_amount: string;
+  last_order_at: string | null;
+}
+
+export interface ClientTopProduct {
+  product_id: number;
+  name: string;
+  quantity: number;
 }
 
 export interface AnalyticsOverview {

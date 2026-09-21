@@ -7,6 +7,7 @@ from src.schemas.user import (
     ClientCreate,
     ClientProfileUpdate,
     UserActiveUpdate,
+    UserPasswordReset,
     UserProfile,
 )
 from src.service.user import UserService
@@ -60,3 +61,13 @@ async def set_user_active(
     user_service: Annotated[UserService, Depends(get_user_service)],
 ) -> UserProfile:
     return await user_service.set_active(user_id, body.is_active)
+
+
+@router.patch("/users/{user_id}/password")
+async def reset_user_password(
+    user_id: int,
+    body: UserPasswordReset,
+    user_service: Annotated[UserService, Depends(get_user_service)],
+) -> UserProfile:
+    """Администратор задаёт клиенту новый пароль (клиент не может сам зарегистрироваться/восстановить его)."""
+    return await user_service.reset_password(user_id, body.password)

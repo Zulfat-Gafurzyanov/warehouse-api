@@ -17,11 +17,12 @@ router = APIRouter(
 async def list_orders(
     order_service: Annotated[OrderService, Depends(get_order_service)],
     status_filter: OrderStatus | None = Query(default=None, alias="status"),
+    user_id: int | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
 ) -> list[OrderListItem]:
     return await order_service.admin_get_all(
-        limit, offset, status_filter.value if status_filter else None
+        limit, offset, status_filter.value if status_filter else None, user_id
     )
 
 

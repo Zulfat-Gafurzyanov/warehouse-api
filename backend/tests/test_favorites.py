@@ -11,7 +11,7 @@ def _auth_header(user_id: int, role: str) -> dict:
 
 def _active_user_record(user_id: int) -> dict:
     return {
-        "id": user_id, "email": "u@example.com", "is_active": True,
+        "id": user_id, "login": "u@example.com", "is_active": True,
         "created_at": "2025-01-01T00:00:00Z", "role": "user",
     }
 

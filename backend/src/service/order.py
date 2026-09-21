@@ -78,9 +78,9 @@ class OrderService:
         return OrderOut(**dict(order), items=[OrderItemOut(**dict(i)) for i in items])
 
     async def admin_get_all(
-        self, limit: int, offset: int, status_filter: str | None
+        self, limit: int, offset: int, status_filter: str | None, user_id: int | None = None
     ) -> list[OrderListItem]:
-        orders = await self.order_repository.get_all(limit, offset, status_filter)
+        orders = await self.order_repository.get_all(limit, offset, status_filter, user_id)
         return [OrderListItem(**dict(o)) for o in orders]
 
     async def admin_set_status(self, order_id: int, new_status: str) -> OrderOut:

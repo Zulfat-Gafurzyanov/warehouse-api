@@ -1,34 +1,26 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import {
   COOPERATION_LABELS,
   type ClientCreateInput,
-  type ClientMonthlyPoint,
-  type ClientProfileUpdateInput,
   type CooperationType,
   type PriceGroup,
-  type ProductAdmin,
-  type UserPrice,
   type UserProfile,
 } from "../api/types";
-import { BarChart } from "../components/BarChart";
 import { Modal } from "../components/Modal";
-import { formatPrice } from "../utils/format";
 
-interface ProfileFormState {
-  email: string;
+interface CreateFormState {
+  login: string;
+  password: string;
   company_name: string;
   contact_name: string;
   cooperation_type: CooperationType | "";
   price_group_id: string;
 }
 
-interface CreateFormState extends ProfileFormState {
-  password: string;
-}
-
 const EMPTY_CREATE: CreateFormState = {
-  email: "",
+  login: "",
   password: "",
   company_name: "",
   contact_name: "",
@@ -47,19 +39,6 @@ export function ClientsPage() {
   const [createForm, setCreateForm] = useState<CreateFormState>(EMPTY_CREATE);
   const [createError, setCreateError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-
-  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
-  const [profileForm, setProfileForm] = useState<ProfileFormState>({
-    email: "",
-    company_name: "",
-    contact_name: "",
-    cooperation_type: "",
-    price_group_id: "",
-  });
-  const [profileError, setProfileError] = useState<string | null>(null);
-
-  const [pricesUser, setPricesUser] = useState<UserProfile | null>(null);
-  const [analyticsUser, setAnalyticsUser] = useState<UserProfile | null>(null);
 
   function load() {
     setIsLoading(true);
@@ -84,7 +63,7 @@ export function ClientsPage() {
     const q = search.trim().toLowerCase();
     if (!q) return true;
     return (
-      u.email.toLowerCase().includes(q) ||
+      u.login.toLowerCase().includes(q) ||
       (u.company_name ?? "").toLowerCase().includes(q) ||
       (u.contact_name ?? "").toLowerCase().includes(q)
     );
@@ -102,7 +81,7 @@ export function ClientsPage() {
     setCreateError(null);
     try {
       const body: ClientCreateInput = {
-        email: createForm.email,
+        login: createForm.login,
         password: createForm.password,
         company_name: createForm.company_name || null,
         contact_name: createForm.contact_name || null,
@@ -114,41 +93,6 @@ export function ClientsPage() {
       load();
     } catch (e) {
       setCreateError(e instanceof ApiError ? e.message : "Не удалось создать клиента");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  function openEditProfile(user: UserProfile) {
-    setEditingUser(user);
-    setProfileForm({
-      email: user.email,
-      company_name: user.company_name ?? "",
-      contact_name: user.contact_name ?? "",
-      cooperation_type: user.cooperation_type ?? "",
-      price_group_id: user.price_group_id ? String(user.price_group_id) : "",
-    });
-    setProfileError(null);
-  }
-
-  async function handleProfileSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!editingUser) return;
-    setSubmitting(true);
-    setProfileError(null);
-    try {
-      const body: ClientProfileUpdateInput = {
-        email: profileForm.email,
-        company_name: profileForm.company_name || null,
-        contact_name: profileForm.contact_name || null,
-        cooperation_type: profileForm.cooperation_type || null,
-        price_group_id: profileForm.price_group_id ? Number(profileForm.price_group_id) : null,
-      };
-      await api.patch(`/admin/users/${editingUser.id}/profile`, body);
-      setEditingUser(null);
-      load();
-    } catch (e) {
-      setProfileError(e instanceof ApiError ? e.message : "Не удалось сохранить профиль");
     } finally {
       setSubmitting(false);
     }
@@ -178,7 +122,7 @@ export function ClientsPage() {
       <div className="toolbar">
         <input
           type="search"
-          placeholder="Поиск по email, компании или контакту"
+          placeholder="Поиск по логину, компании или контакту"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -195,7 +139,7 @@ export function ClientsPage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Email</th>
+                <th>Логин</th>
                 <th>Компания</th>
                 <th>Контакт</th>
                 <th>Сотрудничество</th>
@@ -208,7 +152,11 @@ export function ClientsPage() {
             <tbody>
               {filtered.map((u) => (
                 <tr key={u.id}>
-                  <td>{u.email}</td>
+                  <td>
+                    <Link to={`/clients/${u.id}`} style={{ color: "var(--color-primary)", fontWeight: 600 }}>
+                      {u.login}
+                    </Link>
+                  </td>
                   <td>{u.company_name || "—"}</td>
                   <td>{u.contact_name || "—"}</td>
                   <td>{u.cooperation_type ? COOPERATION_LABELS[u.cooperation_type] : "—"}</td>
@@ -225,15 +173,9 @@ export function ClientsPage() {
                   </td>
                   <td>
                     <div className="table-actions">
-                      <button className="btn btn--outline btn--sm" onClick={() => setPricesUser(u)}>
-                        Цены
-                      </button>
-                      <button className="btn btn--outline btn--sm" onClick={() => setAnalyticsUser(u)}>
-                        Аналитика
-                      </button>
-                      <button className="btn btn--outline btn--sm" onClick={() => openEditProfile(u)}>
-                        Изменить
-                      </button>
+                      <Link to={`/clients/${u.id}`} className="btn btn--outline btn--sm">
+                        Карточка
+                      </Link>
                       <button
                         className={`btn btn--sm ${u.is_active ? "btn--danger" : ""}`}
                         onClick={() => toggleActive(u)}
@@ -254,12 +196,13 @@ export function ClientsPage() {
           <form onSubmit={handleCreate}>
             <div className="form-row">
               <label className="form-field">
-                Email
+                Логин
                 <input
-                  type="email"
-                  value={createForm.email}
-                  onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                  value={createForm.login}
+                  onChange={(e) => setCreateForm({ ...createForm, login: e.target.value })}
                   required
+                  minLength={3}
+                  autoFocus
                 />
               </label>
               <label className="form-field">
@@ -274,11 +217,55 @@ export function ClientsPage() {
               </label>
             </div>
 
-            <ProfileFields
-              value={createForm}
-              onChange={(patch) => setCreateForm({ ...createForm, ...patch })}
-              priceGroups={priceGroups}
-            />
+            <div className="form-row">
+              <label className="form-field">
+                Компания
+                <input
+                  value={createForm.company_name}
+                  onChange={(e) => setCreateForm({ ...createForm, company_name: e.target.value })}
+                />
+              </label>
+              <label className="form-field">
+                Контактное лицо
+                <input
+                  value={createForm.contact_name}
+                  onChange={(e) => setCreateForm({ ...createForm, contact_name: e.target.value })}
+                />
+              </label>
+            </div>
+
+            <div className="form-row">
+              <label className="form-field">
+                Тип сотрудничества
+                <select
+                  value={createForm.cooperation_type}
+                  onChange={(e) =>
+                    setCreateForm({ ...createForm, cooperation_type: e.target.value as CooperationType | "" })
+                  }
+                >
+                  <option value="">Не указан</option>
+                  {Object.entries(COOPERATION_LABELS).map(([k, label]) => (
+                    <option key={k} value={k}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="form-field">
+                Ценовая группа
+                <select
+                  value={createForm.price_group_id}
+                  onChange={(e) => setCreateForm({ ...createForm, price_group_id: e.target.value })}
+                >
+                  <option value="">Без группы</option>
+                  {priceGroups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
 
             {createError && <p className="form-error">{createError}</p>}
 
@@ -293,289 +280,6 @@ export function ClientsPage() {
           </form>
         </Modal>
       )}
-
-      {editingUser && (
-        <Modal title={`Профиль: ${editingUser.email}`} onClose={() => setEditingUser(null)}>
-          <form onSubmit={handleProfileSubmit}>
-            <label className="form-field">
-              Email
-              <input
-                type="email"
-                value={profileForm.email}
-                onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                required
-              />
-            </label>
-
-            <ProfileFields
-              value={profileForm}
-              onChange={(patch) => setProfileForm({ ...profileForm, ...patch })}
-              priceGroups={priceGroups}
-            />
-
-            {profileError && <p className="form-error">{profileError}</p>}
-
-            <div className="modal__footer">
-              <button type="button" className="btn btn--outline" onClick={() => setEditingUser(null)}>
-                Отмена
-              </button>
-              <button type="submit" className="btn" disabled={submitting}>
-                {submitting ? "Сохранение..." : "Сохранить"}
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
-
-      {pricesUser && (
-        <ClientPricesModal user={pricesUser} onClose={() => setPricesUser(null)} />
-      )}
-
-      {analyticsUser && (
-        <ClientAnalyticsModal user={analyticsUser} onClose={() => setAnalyticsUser(null)} />
-      )}
     </div>
-  );
-}
-
-function ClientAnalyticsModal({ user, onClose }: { user: UserProfile; onClose: () => void }) {
-  const [points, setPoints] = useState<ClientMonthlyPoint[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    api
-      .get<ClientMonthlyPoint[]>(`/admin/analytics/clients/${user.id}/orders?months=6`)
-      .then(setPoints)
-      .catch((e) => setError(e instanceof ApiError ? e.message : "Не удалось загрузить аналитику"))
-      .finally(() => setIsLoading(false));
-  }, [user.id]);
-
-  const totalRevenue = points.reduce((sum, p) => sum + Number(p.revenue), 0);
-  const totalOrders = points.reduce((sum, p) => sum + p.orders_count, 0);
-
-  return (
-    <Modal title={`Аналитика: ${user.company_name || user.email}`} onClose={onClose} wide>
-      {isLoading ? (
-        <div className="table-loading">Загрузка...</div>
-      ) : error ? (
-        <div className="table-error">{error}</div>
-      ) : (
-        <>
-          <div className="stat-grid" style={{ marginBottom: 20 }}>
-            <div className="stat-card">
-              <div className="stat-card__label">Заказов за 6 мес.</div>
-              <div className="stat-card__value">{totalOrders}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-card__label">Сумма закупок за 6 мес.</div>
-              <div className="stat-card__value">{formatPrice(totalRevenue)}</div>
-            </div>
-          </div>
-
-          <h3 style={{ fontSize: 14, marginBottom: 4 }}>Объём заказов по месяцам</h3>
-          <BarChart
-            data={points.map((p) => ({ label: p.month.slice(2), value: Number(p.revenue) }))}
-            formatValue={(v) => formatPrice(v)}
-          />
-        </>
-      )}
-    </Modal>
-  );
-}
-
-function ProfileFields({
-  value,
-  onChange,
-  priceGroups,
-}: {
-  value: ProfileFormState;
-  onChange: (patch: Partial<ProfileFormState>) => void;
-  priceGroups: PriceGroup[];
-}) {
-  return (
-    <>
-      <div className="form-row">
-        <label className="form-field">
-          Компания
-          <input
-            value={value.company_name}
-            onChange={(e) => onChange({ company_name: e.target.value })}
-          />
-        </label>
-        <label className="form-field">
-          Контактное лицо
-          <input
-            value={value.contact_name}
-            onChange={(e) => onChange({ contact_name: e.target.value })}
-          />
-        </label>
-      </div>
-
-      <div className="form-row">
-        <label className="form-field">
-          Тип сотрудничества
-          <select
-            value={value.cooperation_type}
-            onChange={(e) => onChange({ cooperation_type: e.target.value as CooperationType | "" })}
-          >
-            <option value="">Не указан</option>
-            {Object.entries(COOPERATION_LABELS).map(([k, label]) => (
-              <option key={k} value={k}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="form-field">
-          Ценовая группа
-          <select
-            value={value.price_group_id}
-            onChange={(e) => onChange({ price_group_id: e.target.value })}
-          >
-            <option value="">Без группы</option>
-            {priceGroups.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-    </>
-  );
-}
-
-function ClientPricesModal({ user, onClose }: { user: UserProfile; onClose: () => void }) {
-  const [prices, setPrices] = useState<UserPrice[]>([]);
-  const [products, setProducts] = useState<ProductAdmin[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const [productId, setProductId] = useState("");
-  const [price, setPrice] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
-
-  function load() {
-    setIsLoading(true);
-    Promise.all([
-      api.get<UserPrice[]>(`/admin/users/${user.id}/prices`),
-      api.get<ProductAdmin[]>("/admin/products?limit=200"),
-    ])
-      .then(([p, prod]) => {
-        setPrices(p);
-        setProducts(prod);
-      })
-      .catch((e) => setError(e instanceof ApiError ? e.message : "Не удалось загрузить цены"))
-      .finally(() => setIsLoading(false));
-  }
-
-  useEffect(load, [user.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function handleAdd(e: FormEvent) {
-    e.preventDefault();
-    if (!productId || !price) return;
-    setSubmitting(true);
-    setFormError(null);
-    try {
-      await api.put(`/admin/users/${user.id}/prices/${productId}`, { price });
-      setProductId("");
-      setPrice("");
-      load();
-    } catch (e) {
-      setFormError(e instanceof ApiError ? e.message : "Не удалось сохранить цену");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function handleRemove(pid: number) {
-    try {
-      await api.delete(`/admin/users/${user.id}/prices/${pid}`);
-      load();
-    } catch (e) {
-      alert(e instanceof ApiError ? e.message : "Не удалось удалить цену");
-    }
-  }
-
-  const availableProducts = products.filter((p) => !prices.some((pr) => pr.product_id === p.id));
-
-  return (
-    <Modal title={`Индивидуальные цены: ${user.company_name || user.email}`} onClose={onClose} wide>
-      {isLoading ? (
-        <div className="table-loading">Загрузка...</div>
-      ) : error ? (
-        <div className="table-error">{error}</div>
-      ) : (
-        <>
-          {prices.length === 0 ? (
-            <p className="form-hint" style={{ marginTop: 0 }}>
-              Индивидуальных цен пока нет — клиент видит базовую или групповую цену.
-            </p>
-          ) : (
-            <table className="data-table" style={{ marginBottom: 20 }}>
-              <thead>
-                <tr>
-                  <th>Товар</th>
-                  <th>Артикул</th>
-                  <th>Цена</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {prices.map((p) => (
-                  <tr key={p.product_id}>
-                    <td>{p.product_name}</td>
-                    <td>{p.product_sku}</td>
-                    <td>{formatPrice(p.price)}</td>
-                    <td>
-                      <button
-                        className="btn btn--danger btn--sm"
-                        onClick={() => handleRemove(p.product_id)}
-                      >
-                        Удалить
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-
-          <form onSubmit={handleAdd} className="form-row" style={{ alignItems: "flex-end" }}>
-            <label className="form-field">
-              Товар
-              <select value={productId} onChange={(e) => setProductId(e.target.value)} required>
-                <option value="" disabled>
-                  Выберите товар
-                </option>
-                {availableProducts.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.sku})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="form-field">
-              Цена, ₽
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                required
-              />
-            </label>
-            <button type="submit" className="btn" disabled={submitting} style={{ marginBottom: 16 }}>
-              Добавить
-            </button>
-          </form>
-
-          {formError && <p className="form-error">{formError}</p>}
-        </>
-      )}
-    </Modal>
   );
 }

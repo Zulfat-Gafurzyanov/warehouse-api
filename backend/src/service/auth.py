@@ -22,12 +22,12 @@ class AuthService:
         self.redis = redis_client
 
     async def sign_in(self, request: SignInRequest) -> TokenPair:
-        user = await self.repository.get_by_email(request.email)
+        user = await self.repository.get_by_login(request.login)
         if not user:
-            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Неверный email или пароль")
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Неверный логин или пароль")
 
         if not verify_password(request.password, user["password_hash"]):
-            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Неверный email или пароль")
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Неверный логин или пароль")
 
         if not user["is_active"]:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Аккаунт заблокирован")

@@ -38,13 +38,13 @@ class AnalyticsRepository:
     async def get_top_clients(self, limit: int, days: int) -> list[asyncpg.Record]:
         return await self.conn.fetch(
             """
-            SELECT u.id AS user_id, u.email, u.company_name,
+            SELECT u.id AS user_id, u.login, u.company_name,
                    SUM(o.total_amount) AS revenue, COUNT(*) AS orders_count
             FROM "order" o
             JOIN "user" u ON u.id = o.user_id
             WHERE o.created_at >= NOW() - ($2 || ' days')::interval
               AND o.status != 'cancelled'
-            GROUP BY u.id, u.email, u.company_name
+            GROUP BY u.id, u.login, u.company_name
             ORDER BY revenue DESC
             LIMIT $1
             """,
@@ -106,6 +106,34 @@ class AnalyticsRepository:
             ORDER BY m.month
             """,
             user_id, months,
+        )
+
+    async def get_client_stats(self, user_id: int) -> asyncpg.Record:
+        return await self.conn.fetchrow(
+            """
+            SELECT
+                COUNT(*) AS orders_count,
+                COALESCE(SUM(total_amount), 0) AS total_amount,
+                MAX(created_at) AS last_order_at
+            FROM "order"
+            WHERE user_id = $1 AND status != 'cancelled'
+            """,
+            user_id,
+        )
+
+    async def get_client_top_products(self, user_id: int, limit: int) -> list[asyncpg.Record]:
+        return await self.conn.fetch(
+            """
+            SELECT p.id AS product_id, p.name, SUM(oi.quantity) AS quantity
+            FROM order_item oi
+            JOIN "order" o ON o.id = oi.order_id
+            JOIN product p ON p.id = oi.product_id
+            WHERE o.user_id = $1 AND o.status != 'cancelled'
+            GROUP BY p.id, p.name
+            ORDER BY quantity DESC
+            LIMIT $2
+            """,
+            user_id, limit,
         )
 
     async def get_revenue_by_month(self, months: int) -> list[asyncpg.Record]:

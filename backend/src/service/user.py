@@ -16,8 +16,11 @@ class UserService:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Пользователь не найден")
         return UserProfile(**dict(user))
 
-    async def update_email(self, user_id: int, email: str) -> UserProfile:
-        user = await self.repository.update_email(user_id, email)
+    async def update_login(self, user_id: int, login: str) -> UserProfile:
+        try:
+            user = await self.repository.update_login(user_id, login)
+        except UniqueViolationError as e:
+            raise HTTPException(status.HTTP_409_CONFLICT, "Логин уже используется") from e
         if not user:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Пользователь не найден")
         return UserProfile(**dict(user))
@@ -43,7 +46,7 @@ class UserService:
         hashed = hash_password(request.password)
         try:
             user = await self.repository.create_client(
-                email=request.email,
+                login=request.login,
                 password_hash=hashed,
                 company_name=request.company_name,
                 contact_name=request.contact_name,
@@ -51,7 +54,7 @@ class UserService:
                 price_group_id=request.price_group_id,
             )
         except UniqueViolationError as e:
-            raise HTTPException(status.HTTP_409_CONFLICT, "Email уже зарегистрирован") from e
+            raise HTTPException(status.HTTP_409_CONFLICT, "Логин уже используется") from e
         except ForeignKeyViolationError as e:
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Указанная ценовая группа не существует") from e
         return UserProfile(**dict(user))
@@ -63,9 +66,16 @@ class UserService:
         try:
             user = await self.repository.update_profile(user_id, fields)
         except UniqueViolationError as e:
-            raise HTTPException(status.HTTP_409_CONFLICT, "Email уже используется другим пользователем") from e
+            raise HTTPException(status.HTTP_409_CONFLICT, "Логин уже используется другим пользователем") from e
         except ForeignKeyViolationError as e:
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Указанная ценовая группа не существует") from e
+        if not user:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Пользователь не найден")
+        return UserProfile(**dict(user))
+
+    async def reset_password(self, user_id: int, new_password: str) -> UserProfile:
+        hashed = hash_password(new_password)
+        user = await self.repository.update_password(user_id, hashed)
         if not user:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Пользователь не найден")
         return UserProfile(**dict(user))

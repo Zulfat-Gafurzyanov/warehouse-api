@@ -9,7 +9,7 @@ interface AuthContextValue {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (login: string, password: string) => Promise<void>;
   signOut: () => void;
 }
 
@@ -64,8 +64,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function signIn(email: string, password: string) {
-    const tokens = await api.post<TokenPair>("/auth/sign-in", { email, password });
+  async function signIn(login: string, password: string) {
+    const tokens = await api.post<TokenPair>("/auth/sign-in", { login, password });
     setAuthToken(tokens.access_token);
 
     const profile = await api.get<UserProfile>("/users/me").catch(() => null);

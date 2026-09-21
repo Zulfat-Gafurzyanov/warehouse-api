@@ -28,7 +28,7 @@ async def test_list_products_requires_auth(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_client_cannot_create_category(client: AsyncClient, mock_db_conn):
     mock_db_conn.fetchrow.return_value = {
-        "id": 1, "email": "u@example.com", "is_active": True,
+        "id": 1, "login": "u@example.com", "is_active": True,
         "created_at": "2025-01-01T00:00:00Z", "role": "user",
     }
 
@@ -44,7 +44,7 @@ async def test_client_cannot_create_category(client: AsyncClient, mock_db_conn):
 async def test_admin_can_create_category(client: AsyncClient, mock_db_conn):
     mock_db_conn.fetchrow.side_effect = [
         {
-            "id": 1, "email": "admin@example.com", "is_active": True,
+            "id": 1, "login": "admin@example.com", "is_active": True,
             "created_at": "2025-01-01T00:00:00Z", "role": "admin",
         },
         {
@@ -69,7 +69,7 @@ async def test_create_category_duplicate_name_conflict(client: AsyncClient, mock
     async def fetchrow_side_effect(query, *args, **kwargs):
         if 'FROM "user"' in query:
             return {
-                "id": 1, "email": "admin@example.com", "is_active": True,
+                "id": 1, "login": "admin@example.com", "is_active": True,
                 "created_at": "2025-01-01T00:00:00Z", "role": "admin",
             }
         raise UniqueViolationError("duplicate key")

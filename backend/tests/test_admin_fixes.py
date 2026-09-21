@@ -12,9 +12,45 @@ def _auth_header(user_id: int, role: str) -> dict:
 
 def _admin_record() -> dict:
     return {
-        "id": 1, "email": "admin@example.com", "is_active": True,
+        "id": 1, "login": "admin@example.com", "is_active": True,
         "created_at": "2025-01-01T00:00:00Z", "role": "admin",
     }
+
+
+# ── Сброс пароля клиента админом ──────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_admin_can_reset_client_password(client: AsyncClient, mock_db_conn):
+    mock_db_conn.fetchrow.side_effect = [
+        _admin_record(),
+        {
+            "id": 5, "login": "client-login", "is_active": True,
+            "created_at": "2025-01-01T00:00:00Z", "role": "user",
+            "company_name": None, "contact_name": None,
+            "cooperation_type": None, "price_group_id": None,
+        },
+    ]
+
+    resp = await client.patch(
+        "/api/v1/admin/users/5/password",
+        headers=_auth_header(1, "admin"),
+        json={"password": "NewStrongPass1"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["login"] == "client-login"
+
+
+@pytest.mark.asyncio
+async def test_reset_password_too_short_rejected(client: AsyncClient, mock_db_conn):
+    mock_db_conn.fetchrow.return_value = _admin_record()
+
+    resp = await client.patch(
+        "/api/v1/admin/users/5/password",
+        headers=_auth_header(1, "admin"),
+        json={"password": "short"},
+    )
+    assert resp.status_code == 422
 
 
 # ── Роль пользователя больше нельзя менять — один админ ──
@@ -84,15 +120,15 @@ async def test_rename_price_group_not_found(client: AsyncClient, mock_db_conn):
     assert resp.status_code == 404
 
 
-# ── Смена email клиента админом ──────────────────────────
+# ── Смена логина клиента админом ──────────────────────────
 
 
 @pytest.mark.asyncio
-async def test_admin_can_update_client_email(client: AsyncClient, mock_db_conn):
+async def test_admin_can_update_client_login(client: AsyncClient, mock_db_conn):
     mock_db_conn.fetchrow.side_effect = [
         _admin_record(),
         {
-            "id": 5, "email": "new@example.com", "is_active": True,
+            "id": 5, "login": "new-login", "is_active": True,
             "created_at": "2025-01-01T00:00:00Z", "role": "user",
             "company_name": None, "contact_name": None,
             "cooperation_type": None, "price_group_id": None,
@@ -102,14 +138,14 @@ async def test_admin_can_update_client_email(client: AsyncClient, mock_db_conn):
     resp = await client.patch(
         "/api/v1/admin/users/5/profile",
         headers=_auth_header(1, "admin"),
-        json={"email": "new@example.com"},
+        json={"login": "new-login"},
     )
     assert resp.status_code == 200
-    assert resp.json()["email"] == "new@example.com"
+    assert resp.json()["login"] == "new-login"
 
 
 @pytest.mark.asyncio
-async def test_update_client_email_duplicate_conflict(client: AsyncClient, mock_db_conn):
+async def test_update_client_login_duplicate_conflict(client: AsyncClient, mock_db_conn):
     async def fetchrow_side_effect(query, *args, **kwargs):
         if 'FROM "user"' in query and "UPDATE" not in query:
             return _admin_record()
@@ -120,7 +156,7 @@ async def test_update_client_email_duplicate_conflict(client: AsyncClient, mock_
     resp = await client.patch(
         "/api/v1/admin/users/5/profile",
         headers=_auth_header(1, "admin"),
-        json={"email": "taken@example.com"},
+        json={"login": "taken-login"},
     )
     assert resp.status_code == 409
 

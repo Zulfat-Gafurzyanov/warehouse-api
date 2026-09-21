@@ -11,7 +11,7 @@ class User(TimestampMixin, Base):
 
     id: Mapped[int] = mapped_column(
         sa.BigInteger, primary_key=True, autoincrement=True)
-    email: Mapped[str] = mapped_column(
+    login: Mapped[str] = mapped_column(
         sa.String(255), unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(
         sa.String(512), nullable=False)

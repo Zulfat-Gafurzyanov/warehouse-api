@@ -27,7 +27,7 @@ async def create_order(
     order = await order_service.checkout(user_id, body)
 
     profile = await user_service.get_profile(user_id)
-    client_label = profile.company_name or profile.email
+    client_label = profile.company_name or profile.login
     background_tasks.add_task(notification_client.notify_new_order, order, client_label)
 
     return order

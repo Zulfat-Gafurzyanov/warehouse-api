@@ -97,17 +97,24 @@ class OrderRepository:
             order_id,
         )
 
-    async def get_all(self, limit: int, offset: int, status_filter: str | None) -> list[asyncpg.Record]:
+    async def get_all(
+        self,
+        limit: int,
+        offset: int,
+        status_filter: str | None,
+        user_id: int | None = None,
+    ) -> list[asyncpg.Record]:
         return await self.conn.fetch(
             """
             SELECT o.id, o.user_id, o.status, o.total_amount, o.created_at,
                    (SELECT COUNT(*) FROM order_item oi WHERE oi.order_id = o.id) AS item_count
             FROM "order" o
             WHERE ($3::text IS NULL OR o.status = $3)
+              AND ($4::bigint IS NULL OR o.user_id = $4)
             ORDER BY o.id DESC
             LIMIT $1 OFFSET $2
             """,
-            limit, offset, status_filter,
+            limit, offset, status_filter, user_id,
         )
 
     async def set_status(self, order_id: int, status: str) -> asyncpg.Record | None:

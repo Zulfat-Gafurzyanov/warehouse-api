@@ -1,3 +1,4 @@
+import datetime as dt
 from decimal import Decimal
 
 from pydantic import BaseModel
@@ -12,10 +13,22 @@ class TopProduct(BaseModel):
 
 class TopClient(BaseModel):
     user_id: int
-    email: str
+    login: str
     company_name: str | None
     revenue: Decimal
     orders_count: int
+
+
+class ClientStats(BaseModel):
+    orders_count: int
+    total_amount: Decimal
+    last_order_at: dt.datetime | None
+
+
+class ClientTopProduct(BaseModel):
+    product_id: int
+    name: str
+    quantity: int
 
 
 class AnalyticsOverview(BaseModel):

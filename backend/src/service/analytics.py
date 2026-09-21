@@ -2,6 +2,8 @@ from src.repository.analytics import AnalyticsRepository
 from src.schemas.analytics import (
     AnalyticsOverview,
     ClientMonthlyPoint,
+    ClientStats,
+    ClientTopProduct,
     MonthlyPoint,
     RevenuePoint,
     TopClient,
@@ -36,3 +38,11 @@ class AnalyticsService:
     async def get_revenue_trend(self, months: int) -> list[RevenuePoint]:
         rows = await self.repository.get_revenue_by_month(months)
         return [RevenuePoint(**dict(r)) for r in rows]
+
+    async def get_client_stats(self, user_id: int) -> ClientStats:
+        row = await self.repository.get_client_stats(user_id)
+        return ClientStats(**dict(row))
+
+    async def get_client_top_products(self, user_id: int, limit: int) -> list[ClientTopProduct]:
+        rows = await self.repository.get_client_top_products(user_id, limit)
+        return [ClientTopProduct(**dict(r)) for r in rows]

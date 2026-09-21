@@ -6,7 +6,7 @@ import "./LoginPage.css";
 export function LoginPage() {
   const { signIn } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -16,7 +16,7 @@ export function LoginPage() {
     setSubmitting(true);
     setError(null);
     try {
-      await signIn(email, password);
+      await signIn(login, password);
       navigate("/");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Не удалось войти");
@@ -34,13 +34,13 @@ export function LoginPage() {
         <p className="login-card__subtitle">CRM для администраторов</p>
 
         <label className="login-field">
-          Email
+          Логин
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            value={login}
+            onChange={(e) => setLogin(e.target.value)}
             required
-            autoComplete="email"
+            autoComplete="username"
           />
         </label>
 

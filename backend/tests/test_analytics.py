@@ -11,7 +11,7 @@ def _auth_header(user_id: int, role: str) -> dict:
 
 def _admin_record() -> dict:
     return {
-        "id": 1, "email": "admin@example.com", "is_active": True,
+        "id": 1, "login": "admin@example.com", "is_active": True,
         "created_at": "2025-01-01T00:00:00Z", "role": "admin",
     }
 
@@ -19,7 +19,7 @@ def _admin_record() -> dict:
 @pytest.mark.asyncio
 async def test_client_cannot_access_analytics(client: AsyncClient, mock_db_conn):
     mock_db_conn.fetchrow.return_value = {
-        "id": 2, "email": "u@example.com", "is_active": True,
+        "id": 2, "login": "u@example.com", "is_active": True,
         "created_at": "2025-01-01T00:00:00Z", "role": "user",
     }
 
@@ -42,7 +42,7 @@ async def test_admin_can_get_overview(client: AsyncClient, mock_db_conn):
         ],
         [
             {
-                "user_id": 2, "email": "client@example.com", "company_name": None,
+                "user_id": 2, "login": "client@example.com", "company_name": None,
                 "revenue": "500.00", "orders_count": 2,
             },
         ],

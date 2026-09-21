@@ -111,7 +111,7 @@ export function DashboardPage() {
                 <tbody>
                   {overview.top_clients.map((c) => (
                     <tr key={c.user_id}>
-                      <td>{c.company_name || c.email}</td>
+                      <td>{c.company_name || c.login}</td>
                       <td style={{ color: "var(--color-text-muted)" }}>{c.orders_count} зак.</td>
                       <td style={{ textAlign: "right", fontWeight: 600 }}>{formatPrice(c.revenue)}</td>
                     </tr>
