@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { api, ApiError } from "../api/client";
-import { ORDER_STATUS_LABELS, type OrderListItem, type OrderOut } from "../api/types";
+import { ORDER_STATUS_LABELS, type OrderListItem, type OrderOut, type ProductDetail } from "../api/types";
+import { useCart } from "../context/CartContext";
+import { useToast } from "../context/ToastContext";
 import { formatPrice } from "../utils/format";
 import "./OrdersPage.css";
 
@@ -20,6 +22,10 @@ export function OrdersPage() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [details, setDetails] = useState<Record<number, OrderOut>>({});
   const [detailsLoading, setDetailsLoading] = useState<number | null>(null);
+  const [repeatingId, setRepeatingId] = useState<number | null>(null);
+
+  const { addItem } = useCart();
+  const { show } = useToast();
 
   useEffect(() => {
     api
@@ -48,6 +54,52 @@ export function OrdersPage() {
     }
   }
 
+  async function handleRepeatOrder(orderId: number, e: MouseEvent) {
+    e.stopPropagation();
+    setRepeatingId(orderId);
+    try {
+      const order = details[orderId] ?? (await api.get<OrderOut>(`/orders/${orderId}`));
+
+      let added = 0;
+      let unavailable = 0;
+
+      for (const item of order.items) {
+        try {
+          const product = await api.get<ProductDetail>(`/products/${item.product_id}`);
+          if (product.stock <= 0) {
+            unavailable++;
+            continue;
+          }
+          addItem(
+            {
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              stock: product.stock,
+              image_url: product.images[0]?.url ?? null,
+            },
+            Math.min(item.quantity, product.stock),
+          );
+          added++;
+        } catch {
+          unavailable++; // товар удалён или скрыт из каталога
+        }
+      }
+
+      if (added === 0) {
+        show("Все товары из этого заказа сейчас недоступны");
+      } else if (unavailable > 0) {
+        show(`Добавлено в корзину: ${added}, недоступно сейчас: ${unavailable}`);
+      } else {
+        show(`Добавлено в корзину: ${added}`);
+      }
+    } catch {
+      show("Не удалось повторить заказ");
+    } finally {
+      setRepeatingId(null);
+    }
+  }
+
   if (isLoading) return <p className="orders-page__loading container">Загрузка...</p>;
   if (error) return <p className="orders-page__error container">{error}</p>;
 
@@ -62,7 +114,15 @@ export function OrdersPage() {
           <div className="orders-list">
             {orders.map((order) => (
               <div key={order.id} className="order-card">
-                <button className="order-card__summary" onClick={() => toggleExpand(order.id)}>
+                <div
+                  className="order-card__summary"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => toggleExpand(order.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") toggleExpand(order.id);
+                  }}
+                >
                   <div>
                     <div className="order-card__number">Заказ №{order.id}</div>
                     <div className="order-card__date">{formatDate(order.created_at)}</div>
@@ -73,8 +133,15 @@ export function OrdersPage() {
                       {ORDER_STATUS_LABELS[order.status] ?? order.status}
                     </span>
                     <span className="order-card__total">{formatPrice(order.total_amount)}</span>
+                    <button
+                      className="btn btn--outline order-card__repeat"
+                      disabled={repeatingId === order.id}
+                      onClick={(e) => handleRepeatOrder(order.id, e)}
+                    >
+                      {repeatingId === order.id ? "Добавляем..." : "Повторить заказ"}
+                    </button>
                   </div>
-                </button>
+                </div>
 
                 {expandedId === order.id && (
                   <div className="order-card__details">

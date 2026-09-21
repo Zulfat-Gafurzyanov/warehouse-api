@@ -3,6 +3,7 @@ import { api, ApiError } from "../api/client";
 import {
   COOPERATION_LABELS,
   type ClientCreateInput,
+  type ClientMonthlyPoint,
   type ClientProfileUpdateInput,
   type CooperationType,
   type PriceGroup,
@@ -10,6 +11,7 @@ import {
   type UserPrice,
   type UserProfile,
 } from "../api/types";
+import { BarChart } from "../components/BarChart";
 import { Modal } from "../components/Modal";
 import { formatPrice } from "../utils/format";
 
@@ -57,6 +59,7 @@ export function ClientsPage() {
   const [profileError, setProfileError] = useState<string | null>(null);
 
   const [pricesUser, setPricesUser] = useState<UserProfile | null>(null);
+  const [analyticsUser, setAnalyticsUser] = useState<UserProfile | null>(null);
 
   function load() {
     setIsLoading(true);
@@ -225,6 +228,9 @@ export function ClientsPage() {
                       <button className="btn btn--outline btn--sm" onClick={() => setPricesUser(u)}>
                         Цены
                       </button>
+                      <button className="btn btn--outline btn--sm" onClick={() => setAnalyticsUser(u)}>
+                        Аналитика
+                      </button>
                       <button className="btn btn--outline btn--sm" onClick={() => openEditProfile(u)}>
                         Изменить
                       </button>
@@ -324,7 +330,57 @@ export function ClientsPage() {
       {pricesUser && (
         <ClientPricesModal user={pricesUser} onClose={() => setPricesUser(null)} />
       )}
+
+      {analyticsUser && (
+        <ClientAnalyticsModal user={analyticsUser} onClose={() => setAnalyticsUser(null)} />
+      )}
     </div>
+  );
+}
+
+function ClientAnalyticsModal({ user, onClose }: { user: UserProfile; onClose: () => void }) {
+  const [points, setPoints] = useState<ClientMonthlyPoint[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api
+      .get<ClientMonthlyPoint[]>(`/admin/analytics/clients/${user.id}/orders?months=6`)
+      .then(setPoints)
+      .catch((e) => setError(e instanceof ApiError ? e.message : "Не удалось загрузить аналитику"))
+      .finally(() => setIsLoading(false));
+  }, [user.id]);
+
+  const totalRevenue = points.reduce((sum, p) => sum + Number(p.revenue), 0);
+  const totalOrders = points.reduce((sum, p) => sum + p.orders_count, 0);
+
+  return (
+    <Modal title={`Аналитика: ${user.company_name || user.email}`} onClose={onClose} wide>
+      {isLoading ? (
+        <div className="table-loading">Загрузка...</div>
+      ) : error ? (
+        <div className="table-error">{error}</div>
+      ) : (
+        <>
+          <div className="stat-grid" style={{ marginBottom: 20 }}>
+            <div className="stat-card">
+              <div className="stat-card__label">Заказов за 6 мес.</div>
+              <div className="stat-card__value">{totalOrders}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-card__label">Сумма закупок за 6 мес.</div>
+              <div className="stat-card__value">{formatPrice(totalRevenue)}</div>
+            </div>
+          </div>
+
+          <h3 style={{ fontSize: 14, marginBottom: 4 }}>Объём заказов по месяцам</h3>
+          <BarChart
+            data={points.map((p) => ({ label: p.month.slice(2), value: Number(p.revenue) }))}
+            formatValue={(v) => formatPrice(v)}
+          />
+        </>
+      )}
+    </Modal>
   );
 }
 

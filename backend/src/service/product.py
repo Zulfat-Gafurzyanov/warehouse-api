@@ -3,12 +3,14 @@ from fastapi import HTTPException, status
 
 from src.repository.product import ProductRepository
 from src.schemas.product import (
+    PriceHistoryOut,
     ProductAdminOut,
     ProductClientListItem,
     ProductClientOut,
     ProductCreate,
     ProductImageOut,
     ProductUpdate,
+    StockHistoryOut,
 )
 
 
@@ -71,6 +73,14 @@ class ProductService:
             ) from e
         if not deleted:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Товар не найден")
+
+    async def get_stock_history(self, product_id: int, limit: int) -> list[StockHistoryOut]:
+        rows = await self.repository.get_stock_history(product_id, limit)
+        return [StockHistoryOut(**dict(r)) for r in rows]
+
+    async def get_price_history(self, product_id: int, limit: int) -> list[PriceHistoryOut]:
+        rows = await self.repository.get_price_history(product_id, limit)
+        return [PriceHistoryOut(**dict(r)) for r in rows]
 
     async def _to_admin_out(self, product) -> ProductAdminOut:
         images = await self.repository.get_images(product["id"])

@@ -1,8 +1,17 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { api, ApiError } from "../api/client";
-import type { Category, ProductAdmin, ProductCreateInput, ProductUpdateInput } from "../api/types";
+import type {
+  Category,
+  MonthlyPoint,
+  PriceHistoryEntry,
+  ProductAdmin,
+  ProductCreateInput,
+  ProductUpdateInput,
+  StockHistoryEntry,
+} from "../api/types";
+import { BarChart } from "../components/BarChart";
 import { Modal } from "../components/Modal";
-import { formatPrice } from "../utils/format";
+import { formatDateTime, formatPrice } from "../utils/format";
 
 interface FormState {
   sku: string;
@@ -44,6 +53,8 @@ export function ProductsPage() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const [historyProduct, setHistoryProduct] = useState<ProductAdmin | null>(null);
 
   function load() {
     setIsLoading(true);
@@ -237,6 +248,9 @@ export function ProductsPage() {
                       <button className="btn btn--outline btn--sm" onClick={() => toggleActive(p)}>
                         {p.is_active ? "Скрыть" : "Показать"}
                       </button>
+                      <button className="btn btn--outline btn--sm" onClick={() => setHistoryProduct(p)}>
+                        История
+                      </button>
                       <button className="btn btn--outline btn--sm" onClick={() => openEdit(p)}>
                         Изменить
                       </button>
@@ -381,6 +395,121 @@ export function ProductsPage() {
           </form>
         </Modal>
       )}
+
+      {historyProduct && (
+        <ProductHistoryModal product={historyProduct} onClose={() => setHistoryProduct(null)} />
+      )}
     </div>
+  );
+}
+
+function reasonLabel(reason: StockHistoryEntry["reason"]): string {
+  return reason === "order" ? "Заказ" : "Ручная правка";
+}
+
+function ProductHistoryModal({
+  product,
+  onClose,
+}: {
+  product: ProductAdmin;
+  onClose: () => void;
+}) {
+  const [sales, setSales] = useState<MonthlyPoint[]>([]);
+  const [stockHistory, setStockHistory] = useState<StockHistoryEntry[]>([]);
+  const [priceHistory, setPriceHistory] = useState<PriceHistoryEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsLoading(true);
+    Promise.all([
+      api.get<MonthlyPoint[]>(`/admin/analytics/products/${product.id}/sales?months=6`),
+      api.get<StockHistoryEntry[]>(`/admin/products/${product.id}/stock-history?limit=30`),
+      api.get<PriceHistoryEntry[]>(`/admin/products/${product.id}/price-history?limit=30`),
+    ])
+      .then(([s, sh, ph]) => {
+        setSales(s);
+        setStockHistory(sh);
+        setPriceHistory(ph);
+      })
+      .catch((e) => setError(e instanceof ApiError ? e.message : "Не удалось загрузить историю"))
+      .finally(() => setIsLoading(false));
+  }, [product.id]);
+
+  return (
+    <Modal title={`История: ${product.name}`} onClose={onClose} wide>
+      {isLoading ? (
+        <div className="table-loading">Загрузка...</div>
+      ) : error ? (
+        <div className="table-error">{error}</div>
+      ) : (
+        <>
+          <h3 style={{ fontSize: 14, marginBottom: 4 }}>Продажи по месяцам</h3>
+          <div style={{ marginBottom: 24 }}>
+            <BarChart
+              data={sales.map((p) => ({ label: p.month.slice(2), value: p.quantity }))}
+              formatValue={(v) => `${v} шт`}
+              color="#2c5a8c"
+            />
+          </div>
+
+          <div className="form-row">
+            <div>
+              <h3 style={{ fontSize: 14, marginBottom: 8 }}>История цены</h3>
+              <div className="table-wrap" style={{ maxHeight: 220, overflowY: "auto" }}>
+                {priceHistory.length === 0 ? (
+                  <div className="table-empty">Изменений пока не было</div>
+                ) : (
+                  <table className="data-table">
+                    <tbody>
+                      {priceHistory.map((h) => (
+                        <tr key={h.id}>
+                          <td style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
+                            {formatDateTime(h.created_at)}
+                          </td>
+                          <td style={{ whiteSpace: "nowrap" }}>
+                            {h.old_price ? `${formatPrice(h.old_price)} → ` : "установлена: "}
+                            <strong>{formatPrice(h.new_price)}</strong>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <h3 style={{ fontSize: 14, marginBottom: 8 }}>История остатков</h3>
+              <div className="table-wrap" style={{ maxHeight: 220, overflowY: "auto" }}>
+                {stockHistory.length === 0 ? (
+                  <div className="table-empty">Изменений пока не было</div>
+                ) : (
+                  <table className="data-table">
+                    <tbody>
+                      {stockHistory.map((h) => (
+                        <tr key={h.id}>
+                          <td style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
+                            {formatDateTime(h.created_at)}
+                          </td>
+                          <td style={{ color: h.change < 0 ? "var(--color-danger)" : "var(--color-primary)" }}>
+                            {h.change > 0 ? "+" : ""}
+                            {h.change}
+                          </td>
+                          <td style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
+                            {reasonLabel(h.reason)}
+                            {h.order_id ? ` №${h.order_id}` : ""}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </Modal>
   );
 }

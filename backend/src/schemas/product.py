@@ -83,3 +83,20 @@ class ProductClientListItem(BaseModel):
     stock: int
     is_new: bool
     image_url: str | None
+
+
+class StockHistoryOut(BaseModel):
+    id: int
+    product_id: int
+    change: int
+    reason: str
+    order_id: int | None
+    created_at: dt.datetime
+
+
+class PriceHistoryOut(BaseModel):
+    id: int
+    product_id: int
+    old_price: Decimal | None
+    new_price: Decimal
+    created_at: dt.datetime

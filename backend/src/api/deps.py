@@ -11,6 +11,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from src.core.config import settings
 from src.core.security import decode_access_token
 from src.db import pool as db_pool_module
+from src.repository.analytics import AnalyticsRepository
 from src.repository.category import CategoryRepository
 from src.repository.favorite import FavoriteRepository
 from src.repository.group_price import GroupPriceRepository
@@ -19,6 +20,7 @@ from src.repository.price_group import PriceGroupRepository
 from src.repository.product import ProductRepository
 from src.repository.user import UserRepository
 from src.repository.user_price import UserPriceRepository
+from src.service.analytics import AnalyticsService
 from src.service.auth import AuthService
 from src.service.category import CategoryService
 from src.service.favorite import FavoriteService
@@ -132,6 +134,12 @@ async def get_order_repository(
     return OrderRepository(conn)
 
 
+async def get_analytics_repository(
+    conn: Annotated[asyncpg.Connection, Depends(get_db)],
+) -> AnalyticsRepository:
+    return AnalyticsRepository(conn)
+
+
 # ── Сервисы ──────────────────────────────────────────────
 
 
@@ -185,3 +193,9 @@ async def get_order_service(
     product_repo: Annotated[ProductRepository, Depends(get_product_repository)],
 ) -> OrderService:
     return OrderService(repo, product_repo)
+
+
+async def get_analytics_service(
+    repo: Annotated[AnalyticsRepository, Depends(get_analytics_repository)],
+) -> AnalyticsService:
+    return AnalyticsService(repo)

@@ -40,12 +40,27 @@ class ProductRepository:
                 """,
                 sku, name, category_id, description, cost_price, base_price, stock, is_new,
             )
+            await self.conn.execute(
+                "INSERT INTO price_history (product_id, old_price, new_price) VALUES ($1, NULL, $2)",
+                product["id"], base_price,
+            )
+            if stock:
+                await self.conn.execute(
+                    "INSERT INTO stock_history (product_id, change, reason) VALUES ($1, $2, 'manual')",
+                    product["id"], stock,
+                )
             if image_urls:
                 await self._replace_images(product["id"], image_urls)
         return product
 
     async def update(self, product_id: int, fields: dict, image_urls: list[str] | None) -> asyncpg.Record | None:
         async with self.conn.transaction():
+            previous = await self.conn.fetchrow(
+                'SELECT base_price, stock FROM product WHERE id = $1 FOR UPDATE', product_id
+            )
+            if not previous:
+                return None
+
             if fields:
                 set_clauses = ", ".join(f"{key} = ${i}" for i, key in enumerate(fields, start=2))
                 product = await self.conn.fetchrow(
@@ -59,6 +74,17 @@ class ProductRepository:
                 )
             else:
                 product = await self.get_admin_by_id(product_id)
+
+            if product and "base_price" in fields and previous["base_price"] != product["base_price"]:
+                await self.conn.execute(
+                    "INSERT INTO price_history (product_id, old_price, new_price) VALUES ($1, $2, $3)",
+                    product_id, previous["base_price"], product["base_price"],
+                )
+            if product and "stock" in fields and previous["stock"] != product["stock"]:
+                await self.conn.execute(
+                    "INSERT INTO stock_history (product_id, change, reason) VALUES ($1, $2, 'manual')",
+                    product_id, product["stock"] - previous["stock"],
+                )
 
             if product and image_urls is not None:
                 await self._replace_images(product_id, image_urls)
@@ -76,6 +102,30 @@ class ProductRepository:
     async def delete(self, product_id: int) -> bool:
         result = await self.conn.execute("DELETE FROM product WHERE id = $1", product_id)
         return result == "DELETE 1"
+
+    async def get_stock_history(self, product_id: int, limit: int) -> list[asyncpg.Record]:
+        return await self.conn.fetch(
+            """
+            SELECT id, product_id, change, reason, order_id, created_at
+            FROM stock_history
+            WHERE product_id = $1
+            ORDER BY id DESC
+            LIMIT $2
+            """,
+            product_id, limit,
+        )
+
+    async def get_price_history(self, product_id: int, limit: int) -> list[asyncpg.Record]:
+        return await self.conn.fetch(
+            """
+            SELECT id, product_id, old_price, new_price, created_at
+            FROM price_history
+            WHERE product_id = $1
+            ORDER BY id DESC
+            LIMIT $2
+            """,
+            product_id, limit,
+        )
 
     # ── Чтение (админ) ────────────────────────────────────
 

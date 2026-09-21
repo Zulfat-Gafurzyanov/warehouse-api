@@ -132,6 +132,7 @@ async def test_update_client_email_duplicate_conflict(client: AsyncClient, mock_
 async def test_admin_can_update_product_sku(client: AsyncClient, mock_db_conn):
     mock_db_conn.fetchrow.side_effect = [
         _admin_record(),
+        {"base_price": "290.00", "stock": 18},  # previous values (FOR UPDATE)
         {
             "id": 8, "sku": "MUG-001", "name": "Кружка", "category_id": 1,
             "description": None, "cost_price": "80.00", "base_price": "290.00",

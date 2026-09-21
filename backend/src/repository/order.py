@@ -47,6 +47,13 @@ class OrderRepository:
                 """,
                 [(order["id"], i["product_id"], i["quantity"], i["price"]) for i in items],
             )
+            await self.conn.executemany(
+                """
+                INSERT INTO stock_history (product_id, change, reason, order_id)
+                VALUES ($1, $2, 'order', $3)
+                """,
+                [(i["product_id"], -i["quantity"], order["id"]) for i in items],
+            )
         return order
 
     async def get_items(self, order_id: int) -> list[asyncpg.Record]:

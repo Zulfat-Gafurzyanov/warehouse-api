@@ -4,7 +4,13 @@ from fastapi import APIRouter, Depends, Query, status
 
 from src.api.deps import get_category_service, get_current_admin, get_product_service
 from src.schemas.category import CategoryCreate, CategoryOut, CategoryUpdate
-from src.schemas.product import ProductAdminOut, ProductCreate, ProductUpdate
+from src.schemas.product import (
+    PriceHistoryOut,
+    ProductAdminOut,
+    ProductCreate,
+    ProductUpdate,
+    StockHistoryOut,
+)
 from src.service.category import CategoryService
 from src.service.product import ProductService
 
@@ -88,3 +94,21 @@ async def delete_product(
     product_service: Annotated[ProductService, Depends(get_product_service)],
 ) -> None:
     await product_service.delete(product_id)
+
+
+@router.get("/products/{product_id}/stock-history")
+async def get_product_stock_history(
+    product_id: int,
+    product_service: Annotated[ProductService, Depends(get_product_service)],
+    limit: int = Query(default=50, ge=1, le=200),
+) -> list[StockHistoryOut]:
+    return await product_service.get_stock_history(product_id, limit)
+
+
+@router.get("/products/{product_id}/price-history")
+async def get_product_price_history(
+    product_id: int,
+    product_service: Annotated[ProductService, Depends(get_product_service)],
+    limit: int = Query(default=50, ge=1, le=200),
+) -> list[PriceHistoryOut]:
+    return await product_service.get_price_history(product_id, limit)

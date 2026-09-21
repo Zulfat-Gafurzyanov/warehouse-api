@@ -171,3 +171,65 @@ export interface OrderListItem {
   item_count: number;
   created_at: string;
 }
+
+// ── История ────────────────────────────────────────────
+
+export interface StockHistoryEntry {
+  id: number;
+  product_id: number;
+  change: number;
+  reason: "order" | "manual";
+  order_id: number | null;
+  created_at: string;
+}
+
+export interface PriceHistoryEntry {
+  id: number;
+  product_id: number;
+  old_price: string | null;
+  new_price: string;
+  created_at: string;
+}
+
+// ── Аналитика ──────────────────────────────────────────
+
+export interface TopProduct {
+  product_id: number;
+  name: string;
+  quantity: number;
+  revenue: string;
+}
+
+export interface TopClient {
+  user_id: number;
+  email: string;
+  company_name: string | null;
+  revenue: string;
+  orders_count: number;
+}
+
+export interface AnalyticsOverview {
+  month_revenue: string;
+  month_orders_count: number;
+  month_avg_order: string;
+  top_products: TopProduct[];
+  top_clients: TopClient[];
+}
+
+export interface MonthlyPoint {
+  month: string;
+  quantity: number;
+  revenue: string;
+}
+
+export interface ClientMonthlyPoint {
+  month: string;
+  orders_count: number;
+  revenue: string;
+}
+
+export interface RevenuePoint {
+  month: string;
+  revenue: string;
+  orders_count: number;
+}

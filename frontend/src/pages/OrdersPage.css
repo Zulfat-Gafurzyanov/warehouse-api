@@ -44,6 +44,7 @@
   border: none;
   text-align: left;
   flex-wrap: wrap;
+  cursor: pointer;
 }
 
 .order-card__summary:hover {
@@ -109,6 +110,11 @@
   font-size: 14px;
   min-width: 90px;
   text-align: right;
+}
+
+.order-card__repeat {
+  padding: 7px 12px;
+  font-size: 12px;
 }
 
 .order-card__details {
