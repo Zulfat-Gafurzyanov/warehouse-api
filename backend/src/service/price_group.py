@@ -11,9 +11,9 @@ class PriceGroupService:
         self.repository = repository
         self.group_price_repository = group_price_repository
 
-    async def create(self, name: str) -> PriceGroupOut:
+    async def create(self, name: str, discount_percent=None) -> PriceGroupOut:
         try:
-            group = await self.repository.create(name)
+            group = await self.repository.create(name, discount_percent)
         except UniqueViolationError as e:
             raise HTTPException(status.HTTP_409_CONFLICT, "Ценовая группа с таким названием уже существует") from e
         return PriceGroupOut(**dict(group))
@@ -22,9 +22,9 @@ class PriceGroupService:
         groups = await self.repository.get_all()
         return [PriceGroupOut(**dict(g)) for g in groups]
 
-    async def update_name(self, price_group_id: int, name: str) -> PriceGroupOut:
+    async def update(self, price_group_id: int, name: str, discount_percent=None) -> PriceGroupOut:
         try:
-            group = await self.repository.update_name(price_group_id, name)
+            group = await self.repository.update(price_group_id, name, discount_percent)
         except UniqueViolationError as e:
             raise HTTPException(status.HTTP_409_CONFLICT, "Ценовая группа с таким названием уже существует") from e
         if not group:

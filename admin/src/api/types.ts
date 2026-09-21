@@ -97,6 +97,7 @@ export interface PasswordResetInput {
 export interface PriceGroup {
   id: number;
   name: string;
+  discount_percent: string | null;
   created_at: string;
   updated_at: string;
 }

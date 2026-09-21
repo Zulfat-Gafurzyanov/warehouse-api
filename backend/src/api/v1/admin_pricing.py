@@ -29,7 +29,7 @@ async def create_price_group(
     body: PriceGroupCreate,
     price_group_service: Annotated[PriceGroupService, Depends(get_price_group_service)],
 ) -> PriceGroupOut:
-    return await price_group_service.create(body.name)
+    return await price_group_service.create(body.name, body.discount_percent)
 
 
 @router.get("/price-groups")
@@ -45,7 +45,7 @@ async def update_price_group(
     body: PriceGroupUpdate,
     price_group_service: Annotated[PriceGroupService, Depends(get_price_group_service)],
 ) -> PriceGroupOut:
-    return await price_group_service.update_name(price_group_id, body.name)
+    return await price_group_service.update(price_group_id, body.name, body.discount_percent)
 
 
 @router.delete("/price-groups/{price_group_id}", status_code=status.HTTP_204_NO_CONTENT)

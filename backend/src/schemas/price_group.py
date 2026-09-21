@@ -7,16 +7,19 @@ from pydantic import BaseModel, Field
 class PriceGroupOut(BaseModel):
     id: int
     name: str
+    discount_percent: Decimal | None
     created_at: dt.datetime
     updated_at: dt.datetime
 
 
 class PriceGroupCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
+    discount_percent: Decimal | None = Field(default=None, ge=0, le=100)
 
 
 class PriceGroupUpdate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
+    discount_percent: Decimal | None = Field(default=None, ge=0, le=100)
 
 
 class GroupPriceSet(BaseModel):

@@ -13,3 +13,6 @@ class PriceGroup(TimestampMixin, Base):
         sa.BigInteger, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(
         sa.String(100), unique=True, nullable=False)
+    # Скидка от базовой цены, применяется ко всем товарам группы без точечной цены в group_price.
+    discount_percent: Mapped[float | None] = mapped_column(
+        sa.Numeric(5, 2), nullable=True)

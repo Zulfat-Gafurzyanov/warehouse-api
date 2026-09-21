@@ -12,6 +12,7 @@ export function PriceGroupsPage() {
   const [modalMode, setModalMode] = useState<"create" | "edit" | null>(null);
   const [editingGroup, setEditingGroup] = useState<PriceGroup | null>(null);
   const [name, setName] = useState("");
+  const [discountPercent, setDiscountPercent] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -31,6 +32,7 @@ export function PriceGroupsPage() {
   function openCreate() {
     setEditingGroup(null);
     setName("");
+    setDiscountPercent("");
     setFormError(null);
     setModalMode("create");
   }
@@ -38,6 +40,7 @@ export function PriceGroupsPage() {
   function openEdit(group: PriceGroup) {
     setEditingGroup(group);
     setName(group.name);
+    setDiscountPercent(group.discount_percent ?? "");
     setFormError(null);
     setModalMode("edit");
   }
@@ -47,10 +50,14 @@ export function PriceGroupsPage() {
     setSubmitting(true);
     setFormError(null);
     try {
+      const body = {
+        name,
+        discount_percent: discountPercent.trim() === "" ? null : Number(discountPercent),
+      };
       if (modalMode === "edit" && editingGroup) {
-        await api.patch(`/admin/price-groups/${editingGroup.id}`, { name });
+        await api.patch(`/admin/price-groups/${editingGroup.id}`, body);
       } else {
-        await api.post("/admin/price-groups", { name });
+        await api.post("/admin/price-groups", body);
       }
       setModalMode(null);
       load();
@@ -95,6 +102,7 @@ export function PriceGroupsPage() {
             <thead>
               <tr>
                 <th>Название</th>
+                <th>Скидка от базовой цены</th>
                 <th>Создана</th>
                 <th></th>
               </tr>
@@ -103,6 +111,7 @@ export function PriceGroupsPage() {
               {groups.map((g) => (
                 <tr key={g.id}>
                   <td>{g.name}</td>
+                  <td>{g.discount_percent ? `${g.discount_percent}%` : "—"}</td>
                   <td>{formatDate(g.created_at)}</td>
                   <td>
                     <div className="table-actions">
@@ -134,6 +143,23 @@ export function PriceGroupsPage() {
               Название
               <input value={name} onChange={(e) => setName(e.target.value)} required autoFocus />
             </label>
+
+            <label className="form-field">
+              Скидка от базовой цены, %
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                placeholder="Например, 20"
+                value={discountPercent}
+                onChange={(e) => setDiscountPercent(e.target.value)}
+              />
+            </label>
+            <p className="form-hint" style={{ marginTop: -8 }}>
+              Применяется автоматически ко всем товарам группы, для которых ниже не задана
+              отдельная цена. Оставьте пустым, если группа работает только по точечным ценам.
+            </p>
 
             {formError && <p className="form-error">{formError}</p>}
 
@@ -210,6 +236,11 @@ function GroupPricesModal({ group, onClose }: { group: PriceGroup; onClose: () =
   }
 
   const availableProducts = products.filter((p) => !prices.some((pr) => pr.product_id === p.id));
+  const discount = group.discount_percent ? Number(group.discount_percent) : null;
+
+  function discountedPrice(basePrice: string): number {
+    return Math.round(Number(basePrice) * (1 - (discount ?? 0) / 100) * 100) / 100;
+  }
 
   return (
     <Modal title={`Цены группы «${group.name}»`} onClose={onClose} wide>
@@ -219,6 +250,12 @@ function GroupPricesModal({ group, onClose }: { group: PriceGroup; onClose: () =
         <div className="table-error">{error}</div>
       ) : (
         <>
+          <p className="form-hint" style={{ marginTop: 0 }}>
+            {discount
+              ? `Скидка группы: ${discount}% от базовой цены — уже применяется ко всем товарам ниже, для которых не задана отдельная цена.`
+              : "У группы нет скидки от базовой цены — цены нужно задавать точечно для каждого товара."}
+          </p>
+
           {prices.length === 0 ? (
             <p className="form-hint" style={{ marginTop: 0 }}>
               Цен для этой группы пока нет.
@@ -263,6 +300,7 @@ function GroupPricesModal({ group, onClose }: { group: PriceGroup; onClose: () =
                 {availableProducts.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name} ({p.sku})
+                    {discount ? ` — по скидке ${formatPrice(discountedPrice(p.base_price))}` : ""}
                   </option>
                 ))}
               </select>

@@ -77,7 +77,7 @@ async def test_admin_can_rename_price_group(client: AsyncClient, mock_db_conn):
     mock_db_conn.fetchrow.side_effect = [
         _admin_record(),
         {
-            "id": 2, "name": "Опт 1",
+            "id": 2, "name": "Опт 1", "discount_percent": None,
             "created_at": "2025-01-01T00:00:00Z", "updated_at": "2025-01-02T00:00:00Z",
         },
     ]

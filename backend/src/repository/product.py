@@ -5,11 +5,22 @@ _ADMIN_COLUMNS = """
     stock, is_active, is_new, created_at, updated_at
 """
 
-# COALESCE(индивидуальная цена, цена группы клиента, базовая цена) — приоритет из ТЗ.
+# Приоритет из ТЗ: индивидуальная цена > точечная цена группы на товар >
+# скидка группы (%) от базовой цены > базовая цена.
 _CLIENT_PRICE_JOIN = """
     LEFT JOIN user_price up ON up.product_id = p.id AND up.user_id = $1
     LEFT JOIN "user" u ON u.id = $1
     LEFT JOIN group_price gp ON gp.product_id = p.id AND gp.price_group_id = u.price_group_id
+    LEFT JOIN price_group pgrp ON pgrp.id = u.price_group_id
+"""
+
+_RESOLVED_PRICE = """
+    COALESCE(
+        up.price,
+        gp.price,
+        ROUND(p.base_price * (1 - pgrp.discount_percent / 100), 2),
+        p.base_price
+    )
 """
 
 
@@ -162,7 +173,7 @@ class ProductRepository:
             f"""
             SELECT p.id, p.sku, p.name, p.category_id, c.name AS category_name,
                    p.description, p.stock, p.is_new,
-                   COALESCE(up.price, gp.price, p.base_price) AS price
+                   {_RESOLVED_PRICE} AS price
             FROM product p
             JOIN category c ON c.id = p.category_id
             {_CLIENT_PRICE_JOIN}
@@ -182,7 +193,7 @@ class ProductRepository:
         return await self.conn.fetch(
             f"""
             SELECT p.id, p.sku, p.name, p.category_id, p.description, p.stock, p.is_new,
-                   COALESCE(up.price, gp.price, p.base_price) AS price,
+                   {_RESOLVED_PRICE} AS price,
                    (
                        SELECT pi.url FROM product_image pi
                        WHERE pi.product_id = p.id
@@ -203,7 +214,7 @@ class ProductRepository:
         return await self.conn.fetch(
             f"""
             SELECT p.id, p.sku, p.name, p.category_id, p.stock, p.is_new,
-                   COALESCE(up.price, gp.price, p.base_price) AS price,
+                   {_RESOLVED_PRICE} AS price,
                    (
                        SELECT pi.url FROM product_image pi
                        WHERE pi.product_id = p.id
@@ -224,7 +235,7 @@ class ProductRepository:
         return await self.conn.fetch(
             f"""
             SELECT p.id, p.name, p.sku, p.stock, p.is_active,
-                   COALESCE(up.price, gp.price, p.base_price) AS price
+                   {_RESOLVED_PRICE} AS price
             FROM product p
             {_CLIENT_PRICE_JOIN}
             WHERE p.id = ANY($2::bigint[])
