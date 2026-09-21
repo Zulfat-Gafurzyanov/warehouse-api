@@ -261,7 +261,7 @@ function GroupPricesModal({ group, onClose }: { group: PriceGroup; onClose: () =
 
           {prices.length === 0 ? (
             <p className="form-hint" style={{ marginTop: 0 }}>
-              Цен для этой группы пока нет.
+              Индивидуальных цен для группы пока нет.
             </p>
           ) : (
             <table className="data-table" style={{ marginBottom: 20 }}>
