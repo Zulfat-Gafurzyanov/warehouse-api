@@ -94,13 +94,16 @@ export function CatalogPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
             <SortDropdown value={sort} onChange={setSort} />
-            <label className="catalog-content__stock-filter">
+            <label className="toggle-switch">
               <input
                 type="checkbox"
                 checked={hideOutOfStock}
                 onChange={(e) => setHideOutOfStock(e.target.checked)}
               />
-              Скрыть то, чего нет в наличии
+              <span className="toggle-switch__track">
+                <span className="toggle-switch__thumb" />
+              </span>
+              <span className="toggle-switch__label">Только в наличии</span>
             </label>
           </div>
 
