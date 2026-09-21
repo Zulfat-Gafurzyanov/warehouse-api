@@ -37,10 +37,6 @@ class UserUpdate(BaseModel):
         return self
 
 
-class UserRoleUpdate(BaseModel):
-    role: UserRole
-
-
 class UserActiveUpdate(BaseModel):
     is_active: bool
 

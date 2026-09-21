@@ -32,12 +32,6 @@ class UserService:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Пользователь не найден")
         return UserProfile(**dict(user))
 
-    async def set_role(self, user_id: int, role: str) -> UserProfile:
-        user = await self.repository.set_role(user_id, role)
-        if not user:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Пользователь не найден")
-        return UserProfile(**dict(user))
-
     async def delete(self, user_id: int) -> None:
         deleted = await self.repository.delete(user_id)
         if not deleted:

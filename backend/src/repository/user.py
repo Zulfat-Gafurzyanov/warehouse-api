@@ -104,18 +104,6 @@ class UserRepository:
             is_active,
         )
 
-    async def set_role(self, user_id: int, role: str) -> asyncpg.Record | None:
-        return await self.conn.fetchrow(
-            f"""
-            UPDATE "user"
-            SET role = $2, updated_at = NOW()
-            WHERE id = $1
-            RETURNING {_PROFILE_COLUMNS}
-            """,
-            user_id,
-            role,
-        )
-
     async def delete(self, user_id: int) -> bool:
         result = await self.conn.execute(
             """

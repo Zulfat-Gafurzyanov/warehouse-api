@@ -8,7 +8,6 @@ from src.schemas.user import (
     ClientProfileUpdate,
     UserActiveUpdate,
     UserProfile,
-    UserRoleUpdate,
 )
 from src.service.user import UserService
 
@@ -52,15 +51,6 @@ async def get_user(
     user_service: Annotated[UserService, Depends(get_user_service)],
 ) -> UserProfile:
     return await user_service.get_profile(user_id)
-
-
-@router.patch("/users/{user_id}/role")
-async def set_user_role(
-    user_id: int,
-    body: UserRoleUpdate,
-    user_service: Annotated[UserService, Depends(get_user_service)],
-) -> UserProfile:
-    return await user_service.set_role(user_id, body.role.value)
 
 
 @router.patch("/users/{user_id}/active")

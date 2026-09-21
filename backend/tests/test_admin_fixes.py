@@ -17,6 +17,22 @@ def _admin_record() -> dict:
     }
 
 
+# ── Роль пользователя больше нельзя менять — один админ ──
+
+
+@pytest.mark.asyncio
+async def test_set_role_endpoint_does_not_exist(client: AsyncClient, mock_db_conn):
+    """Единственный админ создаётся вручную в БД; сменить роль через API нельзя даже другому админу."""
+    mock_db_conn.fetchrow.return_value = _admin_record()
+
+    resp = await client.patch(
+        "/api/v1/admin/users/5/role",
+        headers=_auth_header(1, "admin"),
+        json={"role": "admin"},
+    )
+    assert resp.status_code == 404
+
+
 # ── Переименование ценовой группы ────────────────────────
 
 
