@@ -1,4 +1,5 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import {
   ORDER_STATUS_LABELS,
@@ -27,6 +28,7 @@ function statusBadgeClass(status: OrderStatus): string {
 }
 
 export function OrdersPage() {
+  const { id: orderIdParam } = useParams<{ id: string }>();
   const [orders, setOrders] = useState<OrderListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +52,20 @@ export function OrdersPage() {
   }
 
   useEffect(load, [statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Переход по ссылке "Открыть заказ в CRM" из Telegram-уведомления — один раз разворачиваем
+  // нужный заказ и подскакиваем к нему, как только список загрузился. Флаг не даёт повторно
+  // сработать при следующих перезагрузках orders (иначе повторный вызов схлопнул бы строку).
+  const autoExpandedRef = useRef(false);
+  useEffect(() => {
+    if (!orderIdParam || isLoading || autoExpandedRef.current) return;
+    const orderId = Number(orderIdParam);
+    if (!orders.some((o) => o.id === orderId)) return;
+    autoExpandedRef.current = true;
+    toggleExpand(orderId);
+    document.getElementById(`order-row-${orderId}`)?.scrollIntoView({ block: "center" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderIdParam, isLoading, orders]);
 
   async function toggleExpand(orderId: number) {
     if (expandedId === orderId) {
@@ -126,7 +142,11 @@ export function OrdersPage() {
             <tbody>
               {orders.map((o) => (
                 <Fragment key={o.id}>
-                  <tr onClick={() => toggleExpand(o.id)} style={{ cursor: "pointer" }}>
+                  <tr
+                    id={`order-row-${o.id}`}
+                    onClick={() => toggleExpand(o.id)}
+                    style={{ cursor: "pointer" }}
+                  >
                     <td>№{o.id}</td>
                     <td>#{o.user_id}</td>
                     <td>{formatDateTime(o.created_at)}</td>
