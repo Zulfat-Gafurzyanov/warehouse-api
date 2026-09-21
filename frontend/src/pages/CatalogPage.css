@@ -39,8 +39,8 @@
 
 .catalog-content__toolbar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
   gap: 16px;
 }
 
@@ -53,6 +53,20 @@
   font-size: 13px;
   color: var(--color-text);
   background: var(--color-bg);
+}
+
+.catalog-content__stock-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.catalog-content__stock-filter input {
+  cursor: pointer;
 }
 
 @media (max-width: 520px) {

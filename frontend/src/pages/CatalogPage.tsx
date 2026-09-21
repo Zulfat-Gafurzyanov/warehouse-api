@@ -14,6 +14,7 @@ export function CatalogPage() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [sort, setSort] = useState<SortOption>("default");
   const [search, setSearch] = useState("");
+  const [hideOutOfStock, setHideOutOfStock] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,7 +50,7 @@ export function CatalogPage() {
   }, [selectedCategory, search]);
 
   const sortedProducts = useMemo(() => {
-    const list = [...products];
+    const list = hideOutOfStock ? products.filter((p) => p.stock > 0) : [...products];
     switch (sort) {
       case "price_asc":
         return list.sort((a, b) => Number(a.price) - Number(b.price));
@@ -60,7 +61,7 @@ export function CatalogPage() {
       default:
         return list;
     }
-  }, [products, sort]);
+  }, [products, sort, hideOutOfStock]);
 
   function handleAddToCart(product: ProductListItem) {
     addItem(product);
@@ -93,6 +94,14 @@ export function CatalogPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
             <SortDropdown value={sort} onChange={setSort} />
+            <label className="catalog-content__stock-filter">
+              <input
+                type="checkbox"
+                checked={hideOutOfStock}
+                onChange={(e) => setHideOutOfStock(e.target.checked)}
+              />
+              Скрыть то, чего нет в наличии
+            </label>
           </div>
 
           {error && <p className="catalog-content__error">{error}</p>}
@@ -100,7 +109,15 @@ export function CatalogPage() {
           {isLoading ? (
             <p className="catalog-content__loading">Загрузка...</p>
           ) : (
-            <ProductGrid products={sortedProducts} onAddToCart={handleAddToCart} />
+            <ProductGrid
+              products={sortedProducts}
+              onAddToCart={handleAddToCart}
+              emptyMessage={
+                hideOutOfStock && products.length > 0
+                  ? "Все товары по этому фильтру сейчас отсутствуют на складе."
+                  : undefined
+              }
+            />
           )}
         </div>
       </div>
