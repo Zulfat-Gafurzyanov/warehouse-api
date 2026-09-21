@@ -25,6 +25,7 @@ export interface ProductDetail {
   sku: string;
   name: string;
   category_id: number;
+  category_name: string;
   description: string | null;
   price: string;
   stock: number;

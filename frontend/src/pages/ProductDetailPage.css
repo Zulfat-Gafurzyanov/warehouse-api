@@ -107,6 +107,12 @@
 .product-detail__sku {
   font-size: 13px;
   color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.product-detail__category {
+  font-size: 13px;
+  color: var(--color-text-muted);
   margin-bottom: 18px;
 }
 

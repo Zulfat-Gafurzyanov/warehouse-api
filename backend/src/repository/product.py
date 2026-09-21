@@ -160,9 +160,11 @@ class ProductRepository:
     async def get_client_by_id(self, product_id: int, user_id: int) -> asyncpg.Record | None:
         return await self.conn.fetchrow(
             f"""
-            SELECT p.id, p.sku, p.name, p.category_id, p.description, p.stock, p.is_new,
+            SELECT p.id, p.sku, p.name, p.category_id, c.name AS category_name,
+                   p.description, p.stock, p.is_new,
                    COALESCE(up.price, gp.price, p.base_price) AS price
             FROM product p
+            JOIN category c ON c.id = p.category_id
             {_CLIENT_PRICE_JOIN}
             WHERE p.id = $2 AND p.is_active = true
             """,

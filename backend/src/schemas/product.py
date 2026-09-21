@@ -65,6 +65,7 @@ class ProductClientOut(BaseModel):
     sku: str
     name: str
     category_id: int
+    category_name: str
     description: str | None
     price: Decimal
     stock: int

@@ -100,6 +100,7 @@ export function ProductDetailPage() {
         <div className="product-detail__info">
           <h1>{product.name}</h1>
           <div className="product-detail__sku">Артикул: {product.sku}</div>
+          <div className="product-detail__category">Категория: {product.category_name}</div>
 
           <div className="product-detail__price">{formatPrice(product.price)}</div>
           <div className={`product-detail__stock ${outOfStock ? "product-detail__stock--out" : ""}`}>
