@@ -136,6 +136,54 @@ class AnalyticsRepository:
             user_id, limit,
         )
 
+    async def get_month_margin(self) -> asyncpg.Record:
+        """Выручка и себестоимость проданного за текущий месяц — для расчёта рентабельности."""
+        return await self.conn.fetchrow(
+            """
+            SELECT
+                COALESCE(SUM(oi.quantity * oi.price), 0) AS revenue,
+                COALESCE(SUM(oi.quantity * p.cost_price), 0) AS cost
+            FROM order_item oi
+            JOIN "order" o ON o.id = oi.order_id
+            JOIN product p ON p.id = oi.product_id
+            WHERE o.status != 'cancelled'
+              AND o.created_at >= date_trunc('month', NOW())
+            """
+        )
+
+    async def get_stock_summary(self) -> asyncpg.Record:
+        return await self.conn.fetchrow(
+            """
+            SELECT COUNT(*) AS active_products, COALESCE(SUM(stock), 0) AS total_stock
+            FROM product
+            WHERE is_active = true
+            """
+        )
+
+    async def get_turnover(self, limit: int) -> list[asyncpg.Record]:
+        """Оборачиваемость: сколько штук товара продано за последние 7/30/90 дней."""
+        return await self.conn.fetch(
+            """
+            SELECT p.id AS product_id, p.sku, p.name, p.stock,
+                   COALESCE(SUM(CASE WHEN o.created_at >= NOW() - interval '7 days'
+                                      THEN oi.quantity ELSE 0 END), 0)::int AS sold_7d,
+                   COALESCE(SUM(CASE WHEN o.created_at >= NOW() - interval '30 days'
+                                      THEN oi.quantity ELSE 0 END), 0)::int AS sold_30d,
+                   COALESCE(SUM(CASE WHEN o.id IS NOT NULL
+                                      THEN oi.quantity ELSE 0 END), 0)::int AS sold_90d
+            FROM product p
+            LEFT JOIN order_item oi ON oi.product_id = p.id
+            LEFT JOIN "order" o ON o.id = oi.order_id
+                AND o.status != 'cancelled'
+                AND o.created_at >= NOW() - interval '90 days'
+            WHERE p.is_active = true
+            GROUP BY p.id, p.sku, p.name, p.stock
+            ORDER BY sold_30d DESC, sold_90d DESC
+            LIMIT $1
+            """,
+            limit,
+        )
+
     async def get_revenue_by_month(self, months: int) -> list[asyncpg.Record]:
         return await self.conn.fetch(
             """

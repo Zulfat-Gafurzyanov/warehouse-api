@@ -37,8 +37,22 @@ class AnalyticsOverview(BaseModel):
     month_revenue: Decimal
     month_orders_count: int
     month_avg_order: Decimal
+    month_margin: Decimal
+    month_margin_percent: Decimal
+    active_products_count: int
+    total_stock: int
     top_products: list[TopProduct]
     top_clients: list[TopClient]
+
+
+class TurnoverItem(BaseModel):
+    product_id: int
+    sku: str
+    name: str
+    stock: int
+    sold_7d: int
+    sold_30d: int
+    sold_90d: int
 
 
 class MonthlyPoint(BaseModel):

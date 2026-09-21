@@ -51,6 +51,10 @@ async def test_admin_can_get_overview(client: AsyncClient, mock_db_conn):
     async def fetchrow_side_effect(query, *args, **kwargs):
         if 'FROM "user"' in query:
             return _admin_record()
+        if "cost_price" in query:
+            return {"revenue": "500.00", "cost": "200.00"}
+        if "active_products" in query:
+            return {"active_products": 3, "total_stock": 42}
         return {"revenue": "500.00", "orders_count": 2, "avg_order": "250.00"}
 
     mock_db_conn.fetchrow.side_effect = fetchrow_side_effect
@@ -64,6 +68,25 @@ async def test_admin_can_get_overview(client: AsyncClient, mock_db_conn):
     assert body["month_orders_count"] == 2
     assert body["top_products"][0]["name"] == "Магнит"
     assert body["top_clients"][0]["orders_count"] == 2
+    assert body["month_margin"] == "300.00"
+    assert body["active_products_count"] == 3
+    assert body["total_stock"] == 42
+
+
+@pytest.mark.asyncio
+async def test_admin_can_get_turnover(client: AsyncClient, mock_db_conn):
+    mock_db_conn.fetchrow.return_value = _admin_record()
+    mock_db_conn.fetch.return_value = [
+        {"product_id": 1, "sku": "MAG-001", "name": "Магнит", "stock": 40,
+         "sold_7d": 2, "sold_30d": 8, "sold_90d": 20},
+    ]
+
+    resp = await client.get(
+        "/api/v1/admin/analytics/turnover",
+        headers=_auth_header(1, "admin"),
+    )
+    assert resp.status_code == 200
+    assert resp.json()[0]["sold_30d"] == 8
 
 
 @pytest.mark.asyncio

@@ -7,6 +7,7 @@ import type {
   OrderListItem,
   ProductAdmin,
   RevenuePoint,
+  TurnoverItem,
 } from "../api/types";
 import { formatDateTime, formatPrice } from "../utils/format";
 
@@ -17,6 +18,7 @@ export function DashboardPage() {
   const [newOrders, setNewOrders] = useState<OrderListItem[]>([]);
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [revenueTrend, setRevenueTrend] = useState<RevenuePoint[]>([]);
+  const [turnover, setTurnover] = useState<TurnoverItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -25,12 +27,14 @@ export function DashboardPage() {
       api.get<OrderListItem[]>("/admin/orders?status=new&limit=200"),
       api.get<AnalyticsOverview>("/admin/analytics/overview"),
       api.get<RevenuePoint[]>("/admin/analytics/revenue?months=6"),
+      api.get<TurnoverItem[]>("/admin/analytics/turnover?limit=8"),
     ])
-      .then(([p, o, ov, rev]) => {
+      .then(([p, o, ov, rev, turn]) => {
         setProducts(p);
         setNewOrders(o);
         setOverview(ov);
         setRevenueTrend(rev);
+        setTurnover(turn);
       })
       .finally(() => setIsLoading(false));
   }, []);
@@ -62,8 +66,20 @@ export function DashboardPage() {
           <div className="stat-card__value">{formatPrice(overview?.month_avg_order ?? 0)}</div>
         </div>
         <div className="stat-card">
+          <div className="stat-card__label">Рентабельность за месяц</div>
+          <div className="stat-card__value">
+            {overview ? `${Number(overview.month_margin_percent).toFixed(1)}%` : "—"}
+          </div>
+          <div className="stat-card__sub">{formatPrice(overview?.month_margin ?? 0)} прибыли</div>
+        </div>
+        <div className="stat-card">
           <div className="stat-card__label">Новые заказы</div>
           <div className="stat-card__value">{newOrders.length}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card__label">Товара на складе</div>
+          <div className="stat-card__value">{overview?.total_stock ?? 0} шт</div>
+          <div className="stat-card__sub">{overview?.active_products_count ?? 0} активных SKU</div>
         </div>
         <div className="stat-card stat-card--warn">
           <div className="stat-card__label">Мало на складе (≤{LOW_STOCK_THRESHOLD})</div>
@@ -121,6 +137,41 @@ export function DashboardPage() {
             )}
           </div>
         </section>
+      </div>
+
+      <div className="surface" style={{ padding: "18px 20px", marginBottom: 32 }}>
+        <h2 style={{ fontSize: 15, marginBottom: 12 }}>Оборачиваемость (топ по продажам за 30 дней)</h2>
+        <div className="table-wrap">
+          {turnover.length === 0 ? (
+            <div className="table-empty">Продаж пока нет</div>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Товар</th>
+                  <th>Остаток</th>
+                  <th>7 дней</th>
+                  <th>30 дней</th>
+                  <th>90 дней</th>
+                </tr>
+              </thead>
+              <tbody>
+                {turnover.map((t) => (
+                  <tr key={t.product_id}>
+                    <td>
+                      {t.name}{" "}
+                      <span style={{ color: "var(--color-text-muted)" }}>({t.sku})</span>
+                    </td>
+                    <td>{t.stock} шт</td>
+                    <td>{t.sold_7d} шт</td>
+                    <td>{t.sold_30d} шт</td>
+                    <td>{t.sold_90d} шт</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>

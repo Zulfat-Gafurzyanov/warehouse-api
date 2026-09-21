@@ -229,8 +229,22 @@ export interface AnalyticsOverview {
   month_revenue: string;
   month_orders_count: number;
   month_avg_order: string;
+  month_margin: string;
+  month_margin_percent: string;
+  active_products_count: number;
+  total_stock: number;
   top_products: TopProduct[];
   top_clients: TopClient[];
+}
+
+export interface TurnoverItem {
+  product_id: number;
+  sku: string;
+  name: string;
+  stock: number;
+  sold_7d: number;
+  sold_30d: number;
+  sold_90d: number;
 }
 
 export interface MonthlyPoint {

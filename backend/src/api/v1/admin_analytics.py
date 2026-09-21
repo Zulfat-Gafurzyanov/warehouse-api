@@ -10,6 +10,7 @@ from src.schemas.analytics import (
     ClientTopProduct,
     MonthlyPoint,
     RevenuePoint,
+    TurnoverItem,
 )
 from src.service.analytics import AnalyticsService
 
@@ -25,6 +26,14 @@ async def get_overview(
     analytics_service: Annotated[AnalyticsService, Depends(get_analytics_service)],
 ) -> AnalyticsOverview:
     return await analytics_service.get_overview()
+
+
+@router.get("/turnover")
+async def get_turnover(
+    analytics_service: Annotated[AnalyticsService, Depends(get_analytics_service)],
+    limit: int = Query(default=10, ge=1, le=50),
+) -> list[TurnoverItem]:
+    return await analytics_service.get_turnover(limit)
 
 
 @router.get("/revenue")
