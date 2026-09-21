@@ -37,6 +37,7 @@ export interface ProductDetail {
  *  и карточкой товара, собранной на странице деталей товара. */
 export interface CartableProduct {
   id: number;
+  sku: string;
   name: string;
   price: string;
   stock: number;
@@ -47,6 +48,18 @@ export interface TokenPair {
   access_token: string;
   refresh_token: string;
   token_type: string;
+}
+
+export interface UserProfile {
+  id: number;
+  login: string;
+  is_active: boolean;
+  role: "admin" | "user";
+  created_at: string;
+  company_name: string | null;
+  contact_name: string | null;
+  cooperation_type: string | null;
+  price_group_id: number | null;
 }
 
 export interface OrderItemOut {

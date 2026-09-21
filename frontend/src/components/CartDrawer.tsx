@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../api/client";
-import type { OrderOut, ProductListItem } from "../api/types";
+import type { OrderOut, ProductListItem, UserProfile } from "../api/types";
 import { useCart } from "../context/CartContext";
 import { useToast } from "../context/ToastContext";
 import { formatPrice } from "../utils/format";
@@ -14,6 +14,9 @@ interface CartDrawerProps {
 export function CartDrawer({ open, onClose }: CartDrawerProps) {
   const { items, totalAmount, addItem, removeItem, setQuantity, clear } = useCart();
   const { show } = useToast();
+  const [step, setStep] = useState<"cart" | "confirm">("cart");
+  const [comment, setComment] = useState("");
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recommendations, setRecommendations] = useState<ProductListItem[]>([]);
@@ -28,12 +31,34 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
       });
   }, [open]);
 
-  async function handleCheckout() {
+  useEffect(() => {
+    if (!open) {
+      setStep("cart");
+      setComment("");
+      setError(null);
+    }
+  }, [open]);
+
+  function handleProceedToConfirm() {
+    setStep("confirm");
+    setError(null);
+    if (!profile) {
+      api
+        .get<UserProfile>("/users/me")
+        .then(setProfile)
+        .catch(() => {
+          /* если профиль не загрузился, просто не покажем блок клиента */
+        });
+    }
+  }
+
+  async function handleSubmitOrder() {
     setSubmitting(true);
     setError(null);
     try {
       const order = await api.post<OrderOut>("/orders", {
         items: items.map((i) => ({ product_id: i.productId, quantity: i.quantity })),
+        comment: comment.trim() || null,
       });
       clear();
       onClose();
@@ -64,7 +89,16 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
       />
       <aside className={`cart-drawer ${open ? "cart-drawer--open" : ""}`}>
         <div className="cart-drawer__header">
-          <h2>Ваш заказ</h2>
+          {step === "confirm" && (
+            <button
+              className="cart-drawer__back"
+              onClick={() => setStep("cart")}
+              aria-label="Назад в корзину"
+            >
+              ←
+            </button>
+          )}
+          <h2>{step === "cart" ? "Ваш заказ" : "Подтверждение заказа"}</h2>
           <button className="cart-drawer__close" onClick={onClose} aria-label="Закрыть">
             ×
           </button>
@@ -72,7 +106,7 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
 
         {items.length === 0 ? (
           <p className="cart-drawer__empty">Корзина пуста</p>
-        ) : (
+        ) : step === "cart" ? (
           <div className="cart-drawer__scroll">
             <div className="cart-drawer__list">
               {items.map((item) => (
@@ -85,11 +119,13 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
 
                   <div className="cart-drawer__item-body">
                     <div className="cart-drawer__item-name">{item.name}</div>
+                    <div className="cart-drawer__item-sku">Артикул: {item.sku}</div>
 
                     <div className="cart-drawer__item-row">
                       <div className="cart-drawer__stepper">
                         <button
                           onClick={() => setQuantity(item.productId, item.quantity - 1)}
+                          disabled={item.quantity <= 1}
                           aria-label="Уменьшить количество"
                         >
                           −
@@ -147,6 +183,49 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
               </div>
             )}
           </div>
+        ) : (
+          <div className="cart-drawer__scroll">
+            <div className="cart-drawer__confirm-section">
+              <div className="cart-drawer__confirm-label">Клиент</div>
+              <div className="cart-drawer__confirm-client">
+                {profile ? profile.company_name || profile.login : "Загрузка..."}
+              </div>
+            </div>
+
+            <div className="cart-drawer__confirm-section">
+              <div className="cart-drawer__confirm-label">Состав заказа</div>
+              <table className="cart-drawer__confirm-table">
+                <tbody>
+                  {items.map((item) => (
+                    <tr key={item.productId}>
+                      <td>
+                        <div className="cart-drawer__confirm-name">{item.name}</div>
+                        <div className="cart-drawer__item-sku">Артикул: {item.sku}</div>
+                      </td>
+                      <td className="cart-drawer__confirm-qty">{item.quantity} шт</td>
+                      <td className="cart-drawer__confirm-sum">
+                        {formatPrice(item.price * item.quantity)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="cart-drawer__confirm-section">
+              <label className="cart-drawer__confirm-label" htmlFor="order-comment">
+                Комментарий к заказу
+              </label>
+              <textarea
+                id="order-comment"
+                className="cart-drawer__comment"
+                placeholder="Например: нужно доставить в четверг"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
         )}
 
         <div className="cart-drawer__footer">
@@ -157,13 +236,23 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
 
           {error && <p className="cart-drawer__error">{error}</p>}
 
-          <button
-            className="btn cart-drawer__submit"
-            disabled={items.length === 0 || submitting}
-            onClick={handleCheckout}
-          >
-            {submitting ? "Отправка..." : "Оформить заказ"}
-          </button>
+          {step === "cart" ? (
+            <button
+              className="btn cart-drawer__submit"
+              disabled={items.length === 0}
+              onClick={handleProceedToConfirm}
+            >
+              Оформить заказ
+            </button>
+          ) : (
+            <button
+              className="btn cart-drawer__submit"
+              disabled={submitting}
+              onClick={handleSubmitOrder}
+            >
+              {submitting ? "Отправка..." : "Отправить заказ"}
+            </button>
+          )}
         </div>
       </aside>
     </>

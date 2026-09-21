@@ -5,6 +5,7 @@ const STORAGE_KEY = "warehouse.cart.items";
 
 export interface CartItem {
   productId: number;
+  sku: string;
   name: string;
   price: number;
   imageUrl: string | null;
@@ -51,6 +52,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         ...prev,
         {
           productId: product.id,
+          sku: product.sku,
           name: product.name,
           price: Number(product.price),
           imageUrl: product.image_url,
@@ -66,12 +68,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }
 
   function setQuantity(productId: number, quantity: number) {
-    setItems((prev) => {
-      if (quantity <= 0) return prev.filter((i) => i.productId !== productId);
-      return prev.map((i) =>
-        i.productId === productId ? { ...i, quantity: Math.min(quantity, i.stock) } : i,
-      );
-    });
+    // Количество никогда не опускается до 0 само по себе — удаление позиции только через
+    // явную кнопку «Удалить», чтобы случайный клик по «−» не убирал товар из корзины.
+    setItems((prev) =>
+      prev.map((i) =>
+        i.productId === productId ? { ...i, quantity: Math.min(Math.max(quantity, 1), i.stock) } : i,
+      ),
+    );
   }
 
   function clear() {

@@ -55,6 +55,7 @@ export function ProductDetailPage() {
     addItem(
       {
         id: product.id,
+        sku: product.sku,
         name: product.name,
         price: product.price,
         stock: product.stock,
