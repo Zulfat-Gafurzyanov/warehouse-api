@@ -13,6 +13,7 @@ export function CatalogPage() {
   const [products, setProducts] = useState<ProductListItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [sort, setSort] = useState<SortOption>("default");
+  const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,13 +35,18 @@ export function CatalogPage() {
 
     const params = new URLSearchParams({ limit: "100" });
     if (selectedCategory !== null) params.set("category_id", String(selectedCategory));
+    if (search.trim()) params.set("search", search.trim());
 
-    api
-      .get<ProductListItem[]>(`/products?${params.toString()}`)
-      .then(setProducts)
-      .catch((e) => setError(e instanceof ApiError ? e.message : "Не удалось загрузить каталог"))
-      .finally(() => setIsLoading(false));
-  }, [selectedCategory]);
+    const timeout = setTimeout(() => {
+      api
+        .get<ProductListItem[]>(`/products?${params.toString()}`)
+        .then(setProducts)
+        .catch((e) => setError(e instanceof ApiError ? e.message : "Не удалось загрузить каталог"))
+        .finally(() => setIsLoading(false));
+    }, 250);
+
+    return () => clearTimeout(timeout);
+  }, [selectedCategory, search]);
 
   const sortedProducts = useMemo(() => {
     const list = [...products];
@@ -79,6 +85,13 @@ export function CatalogPage() {
 
         <div className="catalog-content">
           <div className="catalog-content__toolbar">
+            <input
+              type="search"
+              className="catalog-content__search"
+              placeholder="Поиск по названию товара"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
             <SortDropdown value={sort} onChange={setSort} />
           </div>
 
