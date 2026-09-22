@@ -9,8 +9,10 @@ from src.schemas.analytics import (
     ClientStats,
     ClientTopProduct,
     MonthlyPoint,
+    ProductBuyer,
     ProductStats,
     RevenuePoint,
+    StaleProduct,
     TurnoverItem,
 )
 from src.service.analytics import AnalyticsService
@@ -37,6 +39,15 @@ async def get_turnover(
     return await analytics_service.get_turnover(limit)
 
 
+@router.get("/stale-products")
+async def get_stale_products(
+    analytics_service: Annotated[AnalyticsService, Depends(get_analytics_service)],
+    days: int = Query(default=30, ge=1, le=365),
+    limit: int = Query(default=10, ge=1, le=50),
+) -> list[StaleProduct]:
+    return await analytics_service.get_stale_products(days, limit)
+
+
 @router.get("/revenue")
 async def get_revenue_trend(
     analytics_service: Annotated[AnalyticsService, Depends(get_analytics_service)],
@@ -51,6 +62,15 @@ async def get_product_stats(
     analytics_service: Annotated[AnalyticsService, Depends(get_analytics_service)],
 ) -> ProductStats:
     return await analytics_service.get_product_stats(product_id)
+
+
+@router.get("/products/{product_id}/buyers")
+async def get_product_buyers(
+    product_id: int,
+    analytics_service: Annotated[AnalyticsService, Depends(get_analytics_service)],
+    limit: int = Query(default=10, ge=1, le=50),
+) -> list[ProductBuyer]:
+    return await analytics_service.get_product_buyers(product_id, limit)
 
 
 @router.get("/products/{product_id}/sales")

@@ -5,6 +5,7 @@ import type {
   MonthlyPoint,
   PriceHistoryEntry,
   ProductAdmin,
+  ProductBuyer,
   ProductCreateInput,
   ProductStats,
   ProductUpdateInput,
@@ -434,6 +435,7 @@ function ProductHistoryModal({
   const [stockHistory, setStockHistory] = useState<StockHistoryEntry[]>([]);
   const [priceHistory, setPriceHistory] = useState<PriceHistoryEntry[]>([]);
   const [stats, setStats] = useState<ProductStats | null>(null);
+  const [buyers, setBuyers] = useState<ProductBuyer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -455,11 +457,13 @@ function ProductHistoryModal({
       loadStockHistory(),
       api.get<PriceHistoryEntry[]>(`/admin/products/${product.id}/price-history?limit=30`),
       api.get<ProductStats>(`/admin/analytics/products/${product.id}/stats`),
+      api.get<ProductBuyer[]>(`/admin/analytics/products/${product.id}/buyers?limit=10`),
     ])
-      .then(([s, , ph, st]) => {
+      .then(([s, , ph, st, b]) => {
         setSales(s);
         setPriceHistory(ph);
         setStats(st);
+        setBuyers(b);
       })
       .catch((e) => setError(e instanceof ApiError ? e.message : "Не удалось загрузить историю"))
       .finally(() => setIsLoading(false));
@@ -522,6 +526,12 @@ function ProductHistoryModal({
               <div className="stat-card">
                 <div className="stat-card__label">Рентабельность</div>
                 <div className="stat-card__value">{Number(stats.margin_percent_30d).toFixed(1)}%</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-card__label">Среднее кол-во в заказе</div>
+                <div className="stat-card__value">
+                  {Number(stats.avg_quantity_per_order).toFixed(1)} шт
+                </div>
               </div>
             </div>
           )}
@@ -590,6 +600,25 @@ function ProductHistoryModal({
                 )}
               </div>
             </div>
+          </div>
+
+          <h3 style={{ fontSize: 14, marginBottom: 8 }}>Кто покупал</h3>
+          <div className="table-wrap" style={{ maxHeight: 220, overflowY: "auto", marginBottom: 24 }}>
+            {buyers.length === 0 ? (
+              <div className="table-empty">Пока никто не покупал</div>
+            ) : (
+              <table className="data-table">
+                <tbody>
+                  {buyers.map((b) => (
+                    <tr key={b.user_id}>
+                      <td>{b.company_name || b.login}</td>
+                      <td style={{ color: "var(--color-text-muted)" }}>{b.quantity} шт</td>
+                      <td style={{ textAlign: "right", fontWeight: 600 }}>{formatPrice(b.revenue)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
 
           <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: 16, marginTop: 4 }}>

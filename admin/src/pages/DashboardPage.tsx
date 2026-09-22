@@ -7,6 +7,7 @@ import type {
   OrderListItem,
   ProductAdmin,
   RevenuePoint,
+  StaleProduct,
   TurnoverItem,
 } from "../api/types";
 import { formatDateTime, formatPrice } from "../utils/format";
@@ -19,6 +20,7 @@ export function DashboardPage() {
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [revenueTrend, setRevenueTrend] = useState<RevenuePoint[]>([]);
   const [turnover, setTurnover] = useState<TurnoverItem[]>([]);
+  const [staleProducts, setStaleProducts] = useState<StaleProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -28,13 +30,15 @@ export function DashboardPage() {
       api.get<AnalyticsOverview>("/admin/analytics/overview"),
       api.get<RevenuePoint[]>("/admin/analytics/revenue?months=6"),
       api.get<TurnoverItem[]>("/admin/analytics/turnover?limit=8"),
+      api.get<StaleProduct[]>("/admin/analytics/stale-products?days=30&limit=8"),
     ])
-      .then(([p, o, ov, rev, turn]) => {
+      .then(([p, o, ov, rev, turn, stale]) => {
         setProducts(p);
         setNewOrders(o);
         setOverview(ov);
         setRevenueTrend(rev);
         setTurnover(turn);
+        setStaleProducts(stale);
       })
       .finally(() => setIsLoading(false));
   }, []);
@@ -60,6 +64,10 @@ export function DashboardPage() {
         <div className="stat-card">
           <div className="stat-card__label">Заказов за месяц</div>
           <div className="stat-card__value">{overview?.month_orders_count ?? 0}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card__label">Продано единиц</div>
+          <div className="stat-card__value">{overview?.month_units_sold ?? 0} шт</div>
         </div>
         <div className="stat-card">
           <div className="stat-card__label">Средний чек</div>
@@ -139,39 +147,67 @@ export function DashboardPage() {
         </section>
       </div>
 
-      <div className="surface" style={{ padding: "18px 20px", marginBottom: 32 }}>
-        <h2 style={{ fontSize: 15, marginBottom: 12 }}>Оборачиваемость (топ по продажам за 30 дней)</h2>
-        <div className="table-wrap">
-          {turnover.length === 0 ? (
-            <div className="table-empty">Продаж пока нет</div>
-          ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Товар</th>
-                  <th>Остаток</th>
-                  <th>7 дней</th>
-                  <th>30 дней</th>
-                  <th>90 дней</th>
-                </tr>
-              </thead>
-              <tbody>
-                {turnover.map((t) => (
-                  <tr key={t.product_id}>
-                    <td>
-                      {t.name}{" "}
-                      <span style={{ color: "var(--color-text-muted)" }}>({t.sku})</span>
-                    </td>
-                    <td>{t.stock} шт</td>
-                    <td>{t.sold_7d} шт</td>
-                    <td>{t.sold_30d} шт</td>
-                    <td>{t.sold_90d} шт</td>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 32 }}>
+        <section>
+          <h2 style={{ fontSize: 15, marginBottom: 12 }}>Оборачиваемость (топ по продажам за 30 дней)</h2>
+          <div className="table-wrap">
+            {turnover.length === 0 ? (
+              <div className="table-empty">Продаж пока нет</div>
+            ) : (
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Товар</th>
+                    <th>Остаток</th>
+                    <th>7д</th>
+                    <th>30д</th>
+                    <th>90д</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                </thead>
+                <tbody>
+                  {turnover.map((t) => (
+                    <tr key={t.product_id}>
+                      <td>
+                        {t.name}{" "}
+                        <span style={{ color: "var(--color-text-muted)" }}>({t.sku})</span>
+                      </td>
+                      <td>{t.stock} шт</td>
+                      <td>{t.sold_7d} шт</td>
+                      <td>{t.sold_30d} шт</td>
+                      <td>{t.sold_90d} шт</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </section>
+
+        <section>
+          <h2 style={{ fontSize: 15, marginBottom: 12 }}>Давно не продаются (30+ дней)</h2>
+          <div className="table-wrap">
+            {staleProducts.length === 0 ? (
+              <div className="table-empty">Все товары продаются регулярно</div>
+            ) : (
+              <table className="data-table">
+                <tbody>
+                  {staleProducts.map((p) => (
+                    <tr key={p.product_id}>
+                      <td>
+                        {p.name}{" "}
+                        <span style={{ color: "var(--color-text-muted)" }}>({p.sku})</span>
+                      </td>
+                      <td style={{ color: "var(--color-text-muted)" }}>{p.stock} шт</td>
+                      <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                        {p.last_sold_at ? formatDateTime(p.last_sold_at) : "никогда не продавался"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </section>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>

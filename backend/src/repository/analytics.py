@@ -113,10 +113,17 @@ class AnalyticsRepository:
             """
             SELECT
                 COUNT(*) AS orders_count,
-                COALESCE(SUM(total_amount), 0) AS total_amount,
-                MAX(created_at) AS last_order_at
-            FROM "order"
-            WHERE user_id = $1 AND status != 'cancelled'
+                COALESCE(SUM(o.total_amount), 0) AS total_amount,
+                COALESCE(AVG(o.total_amount), 0) AS avg_order,
+                MAX(o.created_at) AS last_order_at,
+                COALESCE((
+                    SELECT SUM(oi.quantity)
+                    FROM order_item oi
+                    JOIN "order" o2 ON o2.id = oi.order_id
+                    WHERE o2.user_id = $1 AND o2.status != 'cancelled'
+                ), 0)::int AS total_items
+            FROM "order" o
+            WHERE o.user_id = $1 AND o.status != 'cancelled'
             """,
             user_id,
         )
@@ -137,12 +144,13 @@ class AnalyticsRepository:
         )
 
     async def get_month_margin(self) -> asyncpg.Record:
-        """Выручка и себестоимость проданного за текущий месяц — для расчёта рентабельности."""
+        """Выручка, себестоимость и количество проданного за текущий месяц."""
         return await self.conn.fetchrow(
             """
             SELECT
                 COALESCE(SUM(oi.quantity * oi.price), 0) AS revenue,
-                COALESCE(SUM(oi.quantity * p.cost_price), 0) AS cost
+                COALESCE(SUM(oi.quantity * p.cost_price), 0) AS cost,
+                COALESCE(SUM(oi.quantity), 0)::int AS units
             FROM order_item oi
             JOIN "order" o ON o.id = oi.order_id
             JOIN product p ON p.id = oi.product_id
@@ -185,7 +193,8 @@ class AnalyticsRepository:
         )
 
     async def get_product_stats(self, product_id: int) -> asyncpg.Record:
-        """Продажи и деньги по одному товару за последние 7/30/90 дней (кроме отменённых)."""
+        """Продажи и деньги по одному товару за последние 7/30/90 дней (кроме отменённых),
+        плюс среднее количество за позицию заказа за всё время."""
         return await self.conn.fetchrow(
             """
             SELECT
@@ -197,7 +206,13 @@ class AnalyticsRepository:
                 COALESCE(SUM(CASE WHEN o.created_at >= NOW() - interval '30 days'
                                    THEN oi.quantity * oi.price ELSE 0 END), 0) AS revenue_30d,
                 COALESCE(SUM(CASE WHEN o.created_at >= NOW() - interval '30 days'
-                                   THEN oi.quantity * p.cost_price ELSE 0 END), 0) AS cost_30d
+                                   THEN oi.quantity * p.cost_price ELSE 0 END), 0) AS cost_30d,
+                COALESCE((
+                    SELECT AVG(oi2.quantity)
+                    FROM order_item oi2
+                    JOIN "order" o2 ON o2.id = oi2.order_id
+                    WHERE oi2.product_id = $1 AND o2.status != 'cancelled'
+                ), 0) AS avg_quantity_per_order
             FROM order_item oi
             JOIN "order" o ON o.id = oi.order_id
             JOIN product p ON p.id = oi.product_id
@@ -206,6 +221,43 @@ class AnalyticsRepository:
               AND o.created_at >= NOW() - interval '90 days'
             """,
             product_id,
+        )
+
+    async def get_product_buyers(self, product_id: int, limit: int) -> list[asyncpg.Record]:
+        """Какие клиенты покупали этот товар — по суммарному количеству."""
+        return await self.conn.fetch(
+            """
+            SELECT u.id AS user_id, u.login, u.company_name,
+                   SUM(oi.quantity) AS quantity, SUM(oi.quantity * oi.price) AS revenue
+            FROM order_item oi
+            JOIN "order" o ON o.id = oi.order_id
+            JOIN "user" u ON u.id = o.user_id
+            WHERE oi.product_id = $1 AND o.status != 'cancelled'
+            GROUP BY u.id, u.login, u.company_name
+            ORDER BY quantity DESC
+            LIMIT $2
+            """,
+            product_id, limit,
+        )
+
+    async def get_stale_products(self, days: int, limit: int) -> list[asyncpg.Record]:
+        """Активные товары без продаж последние N дней (или вообще без продаж),
+        от самых давно/никогда не продававшихся."""
+        return await self.conn.fetch(
+            """
+            SELECT p.id AS product_id, p.sku, p.name, p.stock,
+                   MAX(o.created_at) AS last_sold_at
+            FROM product p
+            LEFT JOIN order_item oi ON oi.product_id = p.id
+            LEFT JOIN "order" o ON o.id = oi.order_id AND o.status != 'cancelled'
+            WHERE p.is_active = true
+            GROUP BY p.id, p.sku, p.name, p.stock
+            HAVING MAX(o.created_at) IS NULL
+                OR MAX(o.created_at) < NOW() - ($1 || ' days')::interval
+            ORDER BY last_sold_at ASC NULLS FIRST
+            LIMIT $2
+            """,
+            str(days), limit,
         )
 
     async def get_revenue_by_month(self, months: int) -> list[asyncpg.Record]:

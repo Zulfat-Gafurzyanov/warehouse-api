@@ -7,8 +7,10 @@ from src.schemas.analytics import (
     ClientStats,
     ClientTopProduct,
     MonthlyPoint,
+    ProductBuyer,
     ProductStats,
     RevenuePoint,
+    StaleProduct,
     TopClient,
     TopProduct,
     TurnoverItem,
@@ -37,6 +39,7 @@ class AnalyticsService:
             month_avg_order=totals["avg_order"],
             month_margin=margin,
             month_margin_percent=margin_percent,
+            month_units_sold=margin_row["units"],
             active_products_count=stock_row["active_products"],
             total_stock=stock_row["total_stock"],
             top_products=[TopProduct(**dict(p)) for p in top_products],
@@ -46,6 +49,10 @@ class AnalyticsService:
     async def get_turnover(self, limit: int) -> list[TurnoverItem]:
         rows = await self.repository.get_turnover(limit)
         return [TurnoverItem(**dict(r)) for r in rows]
+
+    async def get_stale_products(self, days: int, limit: int) -> list[StaleProduct]:
+        rows = await self.repository.get_stale_products(days, limit)
+        return [StaleProduct(**dict(r)) for r in rows]
 
     async def get_product_stats(self, product_id: int) -> ProductStats:
         row = await self.repository.get_product_stats(product_id)
@@ -60,7 +67,12 @@ class AnalyticsService:
             revenue_30d=revenue,
             profit_30d=profit,
             margin_percent_30d=margin_percent,
+            avg_quantity_per_order=Decimal(str(row["avg_quantity_per_order"])),
         )
+
+    async def get_product_buyers(self, product_id: int, limit: int) -> list[ProductBuyer]:
+        rows = await self.repository.get_product_buyers(product_id, limit)
+        return [ProductBuyer(**dict(r)) for r in rows]
 
     async def get_product_sales(self, product_id: int, months: int) -> list[MonthlyPoint]:
         rows = await self.repository.get_product_sales_by_month(product_id, months)

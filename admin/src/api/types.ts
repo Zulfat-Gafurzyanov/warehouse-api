@@ -224,6 +224,8 @@ export interface TopClient {
 export interface ClientStats {
   orders_count: number;
   total_amount: string;
+  avg_order: string;
+  total_items: number;
   last_order_at: string | null;
 }
 
@@ -239,6 +241,7 @@ export interface AnalyticsOverview {
   month_avg_order: string;
   month_margin: string;
   month_margin_percent: string;
+  month_units_sold: number;
   active_products_count: number;
   total_stock: number;
   top_products: TopProduct[];
@@ -262,6 +265,23 @@ export interface ProductStats {
   revenue_30d: string;
   profit_30d: string;
   margin_percent_30d: string;
+  avg_quantity_per_order: string;
+}
+
+export interface ProductBuyer {
+  user_id: number;
+  login: string;
+  company_name: string | null;
+  quantity: number;
+  revenue: string;
+}
+
+export interface StaleProduct {
+  product_id: number;
+  sku: string;
+  name: string;
+  stock: number;
+  last_sold_at: string | null;
 }
 
 export interface MonthlyPoint {

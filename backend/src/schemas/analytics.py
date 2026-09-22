@@ -22,6 +22,8 @@ class TopClient(BaseModel):
 class ClientStats(BaseModel):
     orders_count: int
     total_amount: Decimal
+    avg_order: Decimal
+    total_items: int
     last_order_at: dt.datetime | None
 
 
@@ -39,6 +41,7 @@ class AnalyticsOverview(BaseModel):
     month_avg_order: Decimal
     month_margin: Decimal
     month_margin_percent: Decimal
+    month_units_sold: int
     active_products_count: int
     total_stock: int
     top_products: list[TopProduct]
@@ -64,6 +67,23 @@ class ProductStats(BaseModel):
     revenue_30d: Decimal
     profit_30d: Decimal
     margin_percent_30d: Decimal
+    avg_quantity_per_order: Decimal
+
+
+class ProductBuyer(BaseModel):
+    user_id: int
+    login: str
+    company_name: str | None
+    quantity: int
+    revenue: Decimal
+
+
+class StaleProduct(BaseModel):
+    product_id: int
+    sku: str
+    name: str
+    stock: int
+    last_sold_at: dt.datetime | None
 
 
 class MonthlyPoint(BaseModel):

@@ -52,7 +52,7 @@ async def test_admin_can_get_overview(client: AsyncClient, mock_db_conn):
         if 'FROM "user"' in query:
             return _admin_record()
         if "cost_price" in query:
-            return {"revenue": "500.00", "cost": "200.00"}
+            return {"revenue": "500.00", "cost": "200.00", "units": 5}
         if "active_products" in query:
             return {"active_products": 3, "total_stock": 42}
         return {"revenue": "500.00", "orders_count": 2, "avg_order": "250.00"}
@@ -94,7 +94,7 @@ async def test_admin_can_get_product_stats(client: AsyncClient, mock_db_conn):
     mock_db_conn.fetchrow.side_effect = [
         _admin_record(),
         {"sold_7d": 2, "sold_30d": 8, "sold_90d": 20,
-         "revenue_30d": "800.00", "cost_30d": "320.00"},
+         "revenue_30d": "800.00", "cost_30d": "320.00", "avg_quantity_per_order": "4.0"},
     ]
 
     resp = await client.get(
@@ -154,3 +154,55 @@ async def test_admin_can_get_product_price_history(client: AsyncClient, mock_db_
     )
     assert resp.status_code == 200
     assert resp.json()[0]["new_price"] == "120.00"
+
+
+@pytest.mark.asyncio
+async def test_admin_can_get_client_stats(client: AsyncClient, mock_db_conn):
+    mock_db_conn.fetchrow.side_effect = [
+        _admin_record(),
+        {
+            "orders_count": 3, "total_amount": "900.00", "avg_order": "300.00",
+            "last_order_at": "2026-09-01T00:00:00Z", "total_items": 15,
+        },
+    ]
+
+    resp = await client.get(
+        "/api/v1/admin/analytics/clients/2/stats",
+        headers=_auth_header(1, "admin"),
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["avg_order"] == "300.00"
+    assert body["total_items"] == 15
+
+
+@pytest.mark.asyncio
+async def test_admin_can_get_product_buyers(client: AsyncClient, mock_db_conn):
+    mock_db_conn.fetchrow.return_value = _admin_record()
+    mock_db_conn.fetch.return_value = [
+        {"user_id": 2, "login": "client@example.com", "company_name": None,
+         "quantity": 12, "revenue": "1200.00"},
+    ]
+
+    resp = await client.get(
+        "/api/v1/admin/analytics/products/1/buyers",
+        headers=_auth_header(1, "admin"),
+    )
+    assert resp.status_code == 200
+    assert resp.json()[0]["quantity"] == 12
+
+
+@pytest.mark.asyncio
+async def test_admin_can_get_stale_products(client: AsyncClient, mock_db_conn):
+    mock_db_conn.fetchrow.return_value = _admin_record()
+    mock_db_conn.fetch.return_value = [
+        {"product_id": 6, "sku": "BRL-001", "name": "Брелок кожаный «Владивосток»",
+         "stock": 0, "last_sold_at": None},
+    ]
+
+    resp = await client.get(
+        "/api/v1/admin/analytics/stale-products",
+        headers=_auth_header(1, "admin"),
+    )
+    assert resp.status_code == 200
+    assert resp.json()[0]["last_sold_at"] is None

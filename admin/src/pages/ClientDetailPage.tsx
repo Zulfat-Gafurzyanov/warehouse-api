@@ -330,6 +330,14 @@ function ClientStatsAndChart({ userId }: { userId: number }) {
               <div className="stat-card__value">{formatPrice(stats?.total_amount ?? 0)}</div>
             </div>
             <div className="stat-card">
+              <div className="stat-card__label">Средний чек</div>
+              <div className="stat-card__value">{formatPrice(stats?.avg_order ?? 0)}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-card__label">Куплено товаров</div>
+              <div className="stat-card__value">{stats?.total_items ?? 0} шт</div>
+            </div>
+            <div className="stat-card">
               <div className="stat-card__label">Последний заказ</div>
               <div className="stat-card__value" style={{ fontSize: 15 }}>
                 {stats?.last_order_at ? formatDateTime(stats.last_order_at) : "—"}
