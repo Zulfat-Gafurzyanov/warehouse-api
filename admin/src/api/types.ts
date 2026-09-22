@@ -183,9 +183,15 @@ export interface StockHistoryEntry {
   id: number;
   product_id: number;
   change: number;
-  reason: "order" | "manual";
+  reason: "order" | "manual" | "receipt";
   order_id: number | null;
+  unit_cost: string | null;
   created_at: string;
+}
+
+export interface StockReceiptInput {
+  quantity: number;
+  unit_cost: string;
 }
 
 export interface PriceHistoryEntry {

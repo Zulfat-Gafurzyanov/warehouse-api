@@ -9,7 +9,10 @@ from src.db.base import Base
 
 
 class StockHistory(Base):
-    """reason: 'order' (списание при заказе) или 'manual' (правка администратором)."""
+    """reason: 'order' (списание при заказе), 'manual' (правка администратором без
+    изменения себестоимости) или 'receipt' (приёмка — увеличивает остаток и пересчитывает
+    cost_price товара по средневзвешенной себестоимости; unit_cost — цена закупки за единицу
+    в этой партии)."""
 
     __tablename__ = "stock_history"
 
@@ -27,5 +30,6 @@ class StockHistory(Base):
         sa.ForeignKey("order.id", ondelete="SET NULL"),
         nullable=True,
     )
+    unit_cost: Mapped[float | None] = mapped_column(sa.Numeric(12, 2), nullable=True)
     created_at: Mapped[dt.datetime] = mapped_column(
         sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)

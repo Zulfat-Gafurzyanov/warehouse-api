@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import pytest
 from asyncpg.exceptions import ForeignKeyViolationError, UniqueViolationError
 from httpx import AsyncClient
@@ -221,3 +223,59 @@ async def test_delete_product_referenced_by_orders_conflict(client: AsyncClient,
         headers=_auth_header(1, "admin"),
     )
     assert resp.status_code == 409
+
+
+# ── Приёмка товара — средневзвешенная себестоимость ───────
+
+
+@pytest.mark.asyncio
+async def test_stock_receipt_recomputes_weighted_average_cost(client: AsyncClient, mock_db_conn):
+    # Остаток 5 шт по себестоимости 10, приходует 15 шт по 20 -> средняя (5*10+15*20)/20 = 17.5
+    mock_db_conn.fetchrow.side_effect = [
+        _admin_record(),
+        {"stock": 5, "cost_price": "10.00"},
+        {
+            "id": 1, "sku": "MAG-001", "name": "Магнит", "category_id": 1, "description": None,
+            "cost_price": "17.50", "base_price": "100.00", "stock": 20,
+            "is_active": True, "is_new": False,
+            "created_at": "2025-01-01T00:00:00Z", "updated_at": "2025-01-01T00:00:00Z",
+        },
+    ]
+
+    resp = await client.post(
+        "/api/v1/admin/products/1/receipts",
+        headers=_auth_header(1, "admin"),
+        json={"quantity": 15, "unit_cost": "20.00"},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["cost_price"] == "17.50"
+    assert body["stock"] == 20
+
+    insert_call = mock_db_conn.execute.call_args
+    assert "INSERT INTO stock_history" in insert_call.args[0]
+    assert insert_call.args[1:] == (1, 15, Decimal("20.00"))
+
+
+@pytest.mark.asyncio
+async def test_stock_receipt_product_not_found(client: AsyncClient, mock_db_conn):
+    mock_db_conn.fetchrow.side_effect = [_admin_record(), None]
+
+    resp = await client.post(
+        "/api/v1/admin/products/999/receipts",
+        headers=_auth_header(1, "admin"),
+        json={"quantity": 10, "unit_cost": "5.00"},
+    )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_stock_receipt_rejects_non_positive_quantity(client: AsyncClient, mock_db_conn):
+    mock_db_conn.fetchrow.return_value = _admin_record()
+
+    resp = await client.post(
+        "/api/v1/admin/products/1/receipts",
+        headers=_auth_header(1, "admin"),
+        json={"quantity": 0, "unit_cost": "5.00"},
+    )
+    assert resp.status_code == 422

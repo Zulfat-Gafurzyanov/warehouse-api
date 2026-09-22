@@ -397,22 +397,33 @@ export function ProductsPage() {
       )}
 
       {historyProduct && (
-        <ProductHistoryModal product={historyProduct} onClose={() => setHistoryProduct(null)} />
+        <ProductHistoryModal
+          product={historyProduct}
+          onClose={() => setHistoryProduct(null)}
+          onReceived={(updated) => {
+            setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+            setHistoryProduct(updated);
+          }}
+        />
       )}
     </div>
   );
 }
 
 function reasonLabel(reason: StockHistoryEntry["reason"]): string {
-  return reason === "order" ? "Заказ" : "Ручная правка";
+  if (reason === "order") return "Заказ";
+  if (reason === "receipt") return "Приёмка";
+  return "Ручная правка";
 }
 
 function ProductHistoryModal({
   product,
   onClose,
+  onReceived,
 }: {
   product: ProductAdmin;
   onClose: () => void;
+  onReceived: (updated: ProductAdmin) => void;
 }) {
   const [sales, setSales] = useState<MonthlyPoint[]>([]);
   const [stockHistory, setStockHistory] = useState<StockHistoryEntry[]>([]);
@@ -420,21 +431,56 @@ function ProductHistoryModal({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [receiptQty, setReceiptQty] = useState("");
+  const [receiptCost, setReceiptCost] = useState("");
+  const [receiptSubmitting, setReceiptSubmitting] = useState(false);
+  const [receiptError, setReceiptError] = useState<string | null>(null);
+
+  function loadStockHistory() {
+    return api
+      .get<StockHistoryEntry[]>(`/admin/products/${product.id}/stock-history?limit=30`)
+      .then(setStockHistory);
+  }
+
   useEffect(() => {
     setIsLoading(true);
     Promise.all([
       api.get<MonthlyPoint[]>(`/admin/analytics/products/${product.id}/sales?months=6`),
-      api.get<StockHistoryEntry[]>(`/admin/products/${product.id}/stock-history?limit=30`),
+      loadStockHistory(),
       api.get<PriceHistoryEntry[]>(`/admin/products/${product.id}/price-history?limit=30`),
     ])
-      .then(([s, sh, ph]) => {
+      .then(([s, , ph]) => {
         setSales(s);
-        setStockHistory(sh);
         setPriceHistory(ph);
       })
       .catch((e) => setError(e instanceof ApiError ? e.message : "Не удалось загрузить историю"))
       .finally(() => setIsLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.id]);
+
+  async function handleReceipt(e: FormEvent) {
+    e.preventDefault();
+    if (!receiptQty || !receiptCost) {
+      setReceiptError("Укажите количество и цену закупки за единицу");
+      return;
+    }
+    setReceiptSubmitting(true);
+    setReceiptError(null);
+    try {
+      const updated = await api.post<ProductAdmin>(`/admin/products/${product.id}/receipts`, {
+        quantity: Number(receiptQty),
+        unit_cost: receiptCost,
+      });
+      setReceiptQty("");
+      setReceiptCost("");
+      onReceived(updated);
+      await loadStockHistory();
+    } catch (e) {
+      setReceiptError(e instanceof ApiError ? e.message : "Не удалось оприходовать товар");
+    } finally {
+      setReceiptSubmitting(false);
+    }
+  }
 
   return (
     <Modal title={`История: ${product.name}`} onClose={onClose} wide>
@@ -499,6 +545,7 @@ function ProductHistoryModal({
                           <td style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
                             {reasonLabel(h.reason)}
                             {h.order_id ? ` №${h.order_id}` : ""}
+                            {h.unit_cost ? ` по ${formatPrice(h.unit_cost)}/шт` : ""}
                           </td>
                         </tr>
                       ))}
@@ -507,6 +554,45 @@ function ProductHistoryModal({
                 )}
               </div>
             </div>
+          </div>
+
+          <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: 16, marginTop: 4 }}>
+            <h3 style={{ fontSize: 14, marginBottom: 4 }}>Приёмка товара</h3>
+            <p className="form-hint" style={{ marginTop: 0, marginBottom: 12 }}>
+              Себестоимость: {formatPrice(product.cost_price)}. Остаток: {product.stock} шт.
+              Приёмка пересчитывает себестоимость по средневзвешенной — как в бухучёте.
+            </p>
+            <form onSubmit={handleReceipt} className="form-row" style={{ alignItems: "flex-end" }}>
+              <label className="form-field">
+                Количество, шт
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={receiptQty}
+                  onChange={(e) => setReceiptQty(e.target.value)}
+                />
+              </label>
+              <label className="form-field">
+                Цена закупки за единицу, ₽
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={receiptCost}
+                  onChange={(e) => setReceiptCost(e.target.value)}
+                />
+              </label>
+              <button
+                type="submit"
+                className="btn"
+                disabled={receiptSubmitting}
+                style={{ marginBottom: 16 }}
+              >
+                {receiptSubmitting ? "Оприходование..." : "Оприходовать"}
+              </button>
+            </form>
+            {receiptError && <p className="form-error">{receiptError}</p>}
           </div>
         </>
       )}

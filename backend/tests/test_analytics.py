@@ -110,7 +110,7 @@ async def test_admin_can_get_product_stock_history(client: AsyncClient, mock_db_
     mock_db_conn.fetchrow.return_value = _admin_record()
     mock_db_conn.fetch.return_value = [
         {"id": 1, "product_id": 1, "change": -3, "reason": "order", "order_id": 5,
-         "created_at": "2025-01-01T00:00:00Z"},
+         "unit_cost": None, "created_at": "2025-01-01T00:00:00Z"},
     ]
 
     resp = await client.get(

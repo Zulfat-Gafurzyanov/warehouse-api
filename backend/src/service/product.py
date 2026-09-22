@@ -11,6 +11,7 @@ from src.schemas.product import (
     ProductImageOut,
     ProductUpdate,
     StockHistoryOut,
+    StockReceiptCreate,
 )
 
 
@@ -73,6 +74,12 @@ class ProductService:
             ) from e
         if not deleted:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Товар не найден")
+
+    async def receive_stock(self, product_id: int, request: StockReceiptCreate) -> ProductAdminOut:
+        product = await self.repository.receive_stock(product_id, request.quantity, request.unit_cost)
+        if not product:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Товар не найден")
+        return await self._to_admin_out(product)
 
     async def get_stock_history(self, product_id: int, limit: int) -> list[StockHistoryOut]:
         rows = await self.repository.get_stock_history(product_id, limit)

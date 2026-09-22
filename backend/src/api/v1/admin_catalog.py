@@ -10,6 +10,7 @@ from src.schemas.product import (
     ProductCreate,
     ProductUpdate,
     StockHistoryOut,
+    StockReceiptCreate,
 )
 from src.service.category import CategoryService
 from src.service.product import ProductService
@@ -94,6 +95,15 @@ async def delete_product(
     product_service: Annotated[ProductService, Depends(get_product_service)],
 ) -> None:
     await product_service.delete(product_id)
+
+
+@router.post("/products/{product_id}/receipts")
+async def receive_product_stock(
+    product_id: int,
+    body: StockReceiptCreate,
+    product_service: Annotated[ProductService, Depends(get_product_service)],
+) -> ProductAdminOut:
+    return await product_service.receive_stock(product_id, body)
 
 
 @router.get("/products/{product_id}/stock-history")

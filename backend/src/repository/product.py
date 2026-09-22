@@ -1,3 +1,5 @@
+from decimal import ROUND_HALF_UP, Decimal
+
 import asyncpg
 
 _ADMIN_COLUMNS = """
@@ -117,7 +119,7 @@ class ProductRepository:
     async def get_stock_history(self, product_id: int, limit: int) -> list[asyncpg.Record]:
         return await self.conn.fetch(
             """
-            SELECT id, product_id, change, reason, order_id, created_at
+            SELECT id, product_id, change, reason, order_id, unit_cost, created_at
             FROM stock_history
             WHERE product_id = $1
             ORDER BY id DESC
@@ -125,6 +127,42 @@ class ProductRepository:
             """,
             product_id, limit,
         )
+
+    async def receive_stock(self, product_id: int, quantity: int, unit_cost) -> asyncpg.Record | None:
+        """Приёмка: увеличивает остаток и пересчитывает cost_price по формуле
+        средневзвешенной себестоимости — (старая_стоимость_остатка + стоимость_партии) / новый_остаток."""
+        async with self.conn.transaction():
+            previous = await self.conn.fetchrow(
+                'SELECT stock, cost_price FROM product WHERE id = $1 FOR UPDATE', product_id
+            )
+            if not previous:
+                return None
+
+            old_stock = previous["stock"]
+            old_cost = Decimal(str(previous["cost_price"]))
+            unit_cost = Decimal(str(unit_cost))
+            new_stock = old_stock + quantity
+            new_cost = (
+                (Decimal(old_stock) * old_cost + Decimal(quantity) * unit_cost) / Decimal(new_stock)
+            ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+            product = await self.conn.fetchrow(
+                f"""
+                UPDATE product
+                SET stock = $2, cost_price = $3, updated_at = NOW()
+                WHERE id = $1
+                RETURNING {_ADMIN_COLUMNS}
+                """,
+                product_id, new_stock, new_cost,
+            )
+            await self.conn.execute(
+                """
+                INSERT INTO stock_history (product_id, change, reason, unit_cost)
+                VALUES ($1, $2, 'receipt', $3)
+                """,
+                product_id, quantity, unit_cost,
+            )
+        return product
 
     async def get_price_history(self, product_id: int, limit: int) -> list[asyncpg.Record]:
         return await self.conn.fetch(
