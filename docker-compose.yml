@@ -6,7 +6,8 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: mydb
     ports:
-      - "5433:5432"
+      # Только с самой машины — наружу базе торчать не нужно.
+      - "127.0.0.1:5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -18,7 +19,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redisdata:/data
 
@@ -27,7 +28,9 @@ services:
     env_file:
       - ./bot/.env
     ports:
-      - "8100:8100"
+      # Бэкенд ходит к боту по внутренней docker-сети (BOT_SERVICE_URL=http://bot:8100);
+      # наружу порт нужен только для локальной отладки с хоста.
+      - "127.0.0.1:8100:8100"
 
   backend:
     build: ./backend
@@ -56,8 +59,9 @@ services:
       args:
         # Vite bakes this into the bundle at build time — it's the URL the
         # *browser* will call, so the host-mapped backend port, not the
-        # in-network service name.
-        VITE_API_BASE_URL: http://localhost:8000/api/v1
+        # in-network service name. PUBLIC_HOST defaults to localhost for
+        # local dev; set it in a root .env to deploy on a real host/IP.
+        VITE_API_BASE_URL: http://${PUBLIC_HOST:-localhost}:8000/api/v1
     depends_on:
       - backend
     ports:
@@ -67,7 +71,7 @@ services:
     build:
       context: ./admin
       args:
-        VITE_API_BASE_URL: http://localhost:8000/api/v1
+        VITE_API_BASE_URL: http://${PUBLIC_HOST:-localhost}:8000/api/v1
     depends_on:
       - backend
     ports:

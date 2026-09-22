@@ -1,0 +1,2 @@
+# Deployment-specific docker-compose variables (PUBLIC_HOST etc.) — differs per environment.
+.env
