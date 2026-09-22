@@ -494,6 +494,10 @@ function ProductHistoryModal({
     }
   }
 
+  const costPrice = Number(product.cost_price);
+  const profitPerUnit = Number(product.base_price) - costPrice;
+  const markupPercent = costPrice > 0 ? (profitPerUnit / costPrice) * 100 : null;
+
   return (
     <Modal title={`История: ${product.name}`} onClose={onClose} wide>
       {isLoading ? (
@@ -505,6 +509,21 @@ function ProductHistoryModal({
           <p className="form-hint" style={{ marginTop: 0, marginBottom: 16 }}>
             Товар создан: {formatDateTime(product.created_at)}
           </p>
+
+          <div className="stat-grid" style={{ marginBottom: 24 }}>
+            <div className="stat-card">
+              <div className="stat-card__label">Прибыль с единицы</div>
+              <div className="stat-card__value">{formatPrice(profitPerUnit)}</div>
+              <div className="stat-card__sub">Цена продажи − себестоимость</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-card__label">Наценка</div>
+              <div className="stat-card__value">
+                {markupPercent === null ? "—" : `${markupPercent.toFixed(1)}%`}
+              </div>
+              <div className="stat-card__sub">Прибыль / себестоимость</div>
+            </div>
+          </div>
 
           {stats && (
             <div className="stat-grid" style={{ marginBottom: 24 }}>
@@ -524,7 +543,7 @@ function ProductHistoryModal({
                 <div className="stat-card__value">{formatPrice(stats.profit_30d)}</div>
               </div>
               <div className="stat-card">
-                <div className="stat-card__label">Рентабельность</div>
+                <div className="stat-card__label">Рентабельность (30 дней)</div>
                 <div className="stat-card__value">{Number(stats.margin_percent_30d).toFixed(1)}%</div>
               </div>
               <div className="stat-card">

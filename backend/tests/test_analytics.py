@@ -69,6 +69,8 @@ async def test_admin_can_get_overview(client: AsyncClient, mock_db_conn):
     assert body["top_products"][0]["name"] == "Магнит"
     assert body["top_clients"][0]["orders_count"] == 2
     assert body["month_margin"] == "300.00"
+    # Рентабельность = прибыль / себестоимость (300/200*100), не прибыль / выручка.
+    assert body["month_margin_percent"] == "150.0"
     assert body["active_products_count"] == 3
     assert body["total_stock"] == 42
 
@@ -105,7 +107,7 @@ async def test_admin_can_get_product_stats(client: AsyncClient, mock_db_conn):
     body = resp.json()
     assert body["sold_30d"] == 8
     assert body["profit_30d"] == "480.00"
-    assert body["margin_percent_30d"] == "60.0"
+    assert body["margin_percent_30d"] == "150.0"
 
 
 @pytest.mark.asyncio

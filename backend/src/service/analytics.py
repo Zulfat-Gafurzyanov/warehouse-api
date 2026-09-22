@@ -31,7 +31,8 @@ class AnalyticsService:
         revenue = Decimal(str(totals["revenue"]))
         cost = Decimal(str(margin_row["cost"]))
         margin = revenue - cost
-        margin_percent = (margin / revenue * 100) if revenue else Decimal("0")
+        # ТЗ §21: рентабельность = прибыль / себестоимость (наценка), не прибыль / выручка.
+        margin_percent = (margin / cost * 100) if cost else Decimal("0")
 
         return AnalyticsOverview(
             month_revenue=revenue,
@@ -59,7 +60,8 @@ class AnalyticsService:
         revenue = Decimal(str(row["revenue_30d"]))
         cost = Decimal(str(row["cost_30d"]))
         profit = revenue - cost
-        margin_percent = (profit / revenue * 100) if revenue else Decimal("0")
+        # ТЗ §21: рентабельность = прибыль / себестоимость (наценка), не прибыль / выручка.
+        margin_percent = (profit / cost * 100) if cost else Decimal("0")
         return ProductStats(
             sold_7d=row["sold_7d"],
             sold_30d=row["sold_30d"],
