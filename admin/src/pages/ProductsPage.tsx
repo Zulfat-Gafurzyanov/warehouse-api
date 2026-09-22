@@ -9,6 +9,7 @@ import type {
   ProductUpdateInput,
   StockHistoryEntry,
 } from "../api/types";
+import { ActionsMenu } from "../components/ActionsMenu";
 import { BarChart } from "../components/BarChart";
 import { Modal } from "../components/Modal";
 import { formatDateTime, formatPrice } from "../utils/format";
@@ -244,20 +245,23 @@ export function ProductsPage() {
                     </span>
                   </td>
                   <td>
-                    <div className="table-actions">
-                      <button className="btn btn--outline btn--sm" onClick={() => toggleActive(p)}>
+                    <ActionsMenu>
+                      <button className="actions-menu__item" onClick={() => toggleActive(p)}>
                         {p.is_active ? "Скрыть" : "Показать"}
                       </button>
-                      <button className="btn btn--outline btn--sm" onClick={() => setHistoryProduct(p)}>
+                      <button className="actions-menu__item" onClick={() => setHistoryProduct(p)}>
                         История
                       </button>
-                      <button className="btn btn--outline btn--sm" onClick={() => openEdit(p)}>
+                      <button className="actions-menu__item" onClick={() => openEdit(p)}>
                         Изменить
                       </button>
-                      <button className="btn btn--danger btn--sm" onClick={() => handleDelete(p)}>
+                      <button
+                        className="actions-menu__item actions-menu__item--danger"
+                        onClick={() => handleDelete(p)}
+                      >
                         Удалить
                       </button>
-                    </div>
+                    </ActionsMenu>
                   </td>
                 </tr>
               ))}
