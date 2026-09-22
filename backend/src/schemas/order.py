@@ -49,6 +49,10 @@ class OrderListItem(BaseModel):
     total_amount: Decimal
     item_count: int
     created_at: dt.datetime
+    # Заполняются только в списке для админа (get_all) — своих заказов клиенту не нужно
+    # подписывать его же именем.
+    client_login: str | None = None
+    client_company_name: str | None = None
 
 
 class OrderStatusUpdate(BaseModel):

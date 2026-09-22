@@ -6,6 +6,7 @@ import type {
   PriceHistoryEntry,
   ProductAdmin,
   ProductCreateInput,
+  ProductStats,
   ProductUpdateInput,
   StockHistoryEntry,
 } from "../api/types";
@@ -432,6 +433,7 @@ function ProductHistoryModal({
   const [sales, setSales] = useState<MonthlyPoint[]>([]);
   const [stockHistory, setStockHistory] = useState<StockHistoryEntry[]>([]);
   const [priceHistory, setPriceHistory] = useState<PriceHistoryEntry[]>([]);
+  const [stats, setStats] = useState<ProductStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -452,10 +454,12 @@ function ProductHistoryModal({
       api.get<MonthlyPoint[]>(`/admin/analytics/products/${product.id}/sales?months=6`),
       loadStockHistory(),
       api.get<PriceHistoryEntry[]>(`/admin/products/${product.id}/price-history?limit=30`),
+      api.get<ProductStats>(`/admin/analytics/products/${product.id}/stats`),
     ])
-      .then(([s, , ph]) => {
+      .then(([s, , ph, st]) => {
         setSales(s);
         setPriceHistory(ph);
+        setStats(st);
       })
       .catch((e) => setError(e instanceof ApiError ? e.message : "Не удалось загрузить историю"))
       .finally(() => setIsLoading(false));
@@ -494,6 +498,34 @@ function ProductHistoryModal({
         <div className="table-error">{error}</div>
       ) : (
         <>
+          <p className="form-hint" style={{ marginTop: 0, marginBottom: 16 }}>
+            Товар создан: {formatDateTime(product.created_at)}
+          </p>
+
+          {stats && (
+            <div className="stat-grid" style={{ marginBottom: 24 }}>
+              <div className="stat-card">
+                <div className="stat-card__label">Продано за 30 дней</div>
+                <div className="stat-card__value">{stats.sold_30d} шт</div>
+                <div className="stat-card__sub">
+                  7д: {stats.sold_7d} шт · 90д: {stats.sold_90d} шт
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-card__label">Выручка за 30 дней</div>
+                <div className="stat-card__value">{formatPrice(stats.revenue_30d)}</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-card__label">Прибыль за 30 дней</div>
+                <div className="stat-card__value">{formatPrice(stats.profit_30d)}</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-card__label">Рентабельность</div>
+                <div className="stat-card__value">{Number(stats.margin_percent_30d).toFixed(1)}%</div>
+              </div>
+            </div>
+          )}
+
           <h3 style={{ fontSize: 14, marginBottom: 4 }}>Продажи по месяцам</h3>
           <div style={{ marginBottom: 24 }}>
             <BarChart

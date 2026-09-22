@@ -55,6 +55,17 @@ class TurnoverItem(BaseModel):
     sold_90d: int
 
 
+class ProductStats(BaseModel):
+    """Доп. показатели по товару за последние 30 дней (кроме отменённых заказов)."""
+
+    sold_7d: int
+    sold_30d: int
+    sold_90d: int
+    revenue_30d: Decimal
+    profit_30d: Decimal
+    margin_percent_30d: Decimal
+
+
 class MonthlyPoint(BaseModel):
     month: str  # "YYYY-MM"
     quantity: int

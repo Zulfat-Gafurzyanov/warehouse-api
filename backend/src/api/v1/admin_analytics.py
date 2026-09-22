@@ -9,6 +9,7 @@ from src.schemas.analytics import (
     ClientStats,
     ClientTopProduct,
     MonthlyPoint,
+    ProductStats,
     RevenuePoint,
     TurnoverItem,
 )
@@ -42,6 +43,14 @@ async def get_revenue_trend(
     months: int = Query(default=6, ge=1, le=24),
 ) -> list[RevenuePoint]:
     return await analytics_service.get_revenue_trend(months)
+
+
+@router.get("/products/{product_id}/stats")
+async def get_product_stats(
+    product_id: int,
+    analytics_service: Annotated[AnalyticsService, Depends(get_analytics_service)],
+) -> ProductStats:
+    return await analytics_service.get_product_stats(product_id)
 
 
 @router.get("/products/{product_id}/sales")

@@ -90,6 +90,25 @@ async def test_admin_can_get_turnover(client: AsyncClient, mock_db_conn):
 
 
 @pytest.mark.asyncio
+async def test_admin_can_get_product_stats(client: AsyncClient, mock_db_conn):
+    mock_db_conn.fetchrow.side_effect = [
+        _admin_record(),
+        {"sold_7d": 2, "sold_30d": 8, "sold_90d": 20,
+         "revenue_30d": "800.00", "cost_30d": "320.00"},
+    ]
+
+    resp = await client.get(
+        "/api/v1/admin/analytics/products/1/stats",
+        headers=_auth_header(1, "admin"),
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["sold_30d"] == 8
+    assert body["profit_30d"] == "480.00"
+    assert body["margin_percent_30d"] == "60.0"
+
+
+@pytest.mark.asyncio
 async def test_admin_can_get_product_sales(client: AsyncClient, mock_db_conn):
     mock_db_conn.fetchrow.return_value = _admin_record()
     mock_db_conn.fetch.return_value = [

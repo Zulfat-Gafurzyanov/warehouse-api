@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import {
   ORDER_STATUS_LABELS,
@@ -131,7 +131,7 @@ export function OrdersPage() {
             <thead>
               <tr>
                 <th>№</th>
-                <th>Клиент (ID)</th>
+                <th>Клиент</th>
                 <th>Дата</th>
                 <th>Позиций</th>
                 <th>Сумма</th>
@@ -148,7 +148,11 @@ export function OrdersPage() {
                     style={{ cursor: "pointer" }}
                   >
                     <td>№{o.id}</td>
-                    <td>#{o.user_id}</td>
+                    <td>
+                      <Link to={`/clients/${o.user_id}`} onClick={(e) => e.stopPropagation()}>
+                        {o.client_company_name || o.client_login || `#${o.user_id}`}
+                      </Link>
+                    </td>
                     <td>{formatDateTime(o.created_at)}</td>
                     <td>{o.item_count}</td>
                     <td>{formatPrice(o.total_amount)}</td>

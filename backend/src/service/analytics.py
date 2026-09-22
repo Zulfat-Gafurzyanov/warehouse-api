@@ -7,6 +7,7 @@ from src.schemas.analytics import (
     ClientStats,
     ClientTopProduct,
     MonthlyPoint,
+    ProductStats,
     RevenuePoint,
     TopClient,
     TopProduct,
@@ -45,6 +46,21 @@ class AnalyticsService:
     async def get_turnover(self, limit: int) -> list[TurnoverItem]:
         rows = await self.repository.get_turnover(limit)
         return [TurnoverItem(**dict(r)) for r in rows]
+
+    async def get_product_stats(self, product_id: int) -> ProductStats:
+        row = await self.repository.get_product_stats(product_id)
+        revenue = Decimal(str(row["revenue_30d"]))
+        cost = Decimal(str(row["cost_30d"]))
+        profit = revenue - cost
+        margin_percent = (profit / revenue * 100) if revenue else Decimal("0")
+        return ProductStats(
+            sold_7d=row["sold_7d"],
+            sold_30d=row["sold_30d"],
+            sold_90d=row["sold_90d"],
+            revenue_30d=revenue,
+            profit_30d=profit,
+            margin_percent_30d=margin_percent,
+        )
 
     async def get_product_sales(self, product_id: int, months: int) -> list[MonthlyPoint]:
         rows = await self.repository.get_product_sales_by_month(product_id, months)

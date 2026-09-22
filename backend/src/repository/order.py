@@ -107,8 +107,10 @@ class OrderRepository:
         return await self.conn.fetch(
             """
             SELECT o.id, o.user_id, o.status, o.total_amount, o.created_at,
+                   u.login AS client_login, u.company_name AS client_company_name,
                    (SELECT COUNT(*) FROM order_item oi WHERE oi.order_id = o.id) AS item_count
             FROM "order" o
+            JOIN "user" u ON u.id = o.user_id
             WHERE ($3::text IS NULL OR o.status = $3)
               AND ($4::bigint IS NULL OR o.user_id = $4)
             ORDER BY o.id DESC

@@ -175,6 +175,8 @@ export interface OrderListItem {
   total_amount: string;
   item_count: number;
   created_at: string;
+  client_login: string | null;
+  client_company_name: string | null;
 }
 
 // ── История ────────────────────────────────────────────
@@ -251,6 +253,15 @@ export interface TurnoverItem {
   sold_7d: number;
   sold_30d: number;
   sold_90d: number;
+}
+
+export interface ProductStats {
+  sold_7d: number;
+  sold_30d: number;
+  sold_90d: number;
+  revenue_30d: string;
+  profit_30d: string;
+  margin_percent_30d: string;
 }
 
 export interface MonthlyPoint {

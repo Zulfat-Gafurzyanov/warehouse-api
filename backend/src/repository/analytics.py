@@ -184,6 +184,30 @@ class AnalyticsRepository:
             limit,
         )
 
+    async def get_product_stats(self, product_id: int) -> asyncpg.Record:
+        """Продажи и деньги по одному товару за последние 7/30/90 дней (кроме отменённых)."""
+        return await self.conn.fetchrow(
+            """
+            SELECT
+                COALESCE(SUM(CASE WHEN o.created_at >= NOW() - interval '7 days'
+                                   THEN oi.quantity ELSE 0 END), 0)::int AS sold_7d,
+                COALESCE(SUM(CASE WHEN o.created_at >= NOW() - interval '30 days'
+                                   THEN oi.quantity ELSE 0 END), 0)::int AS sold_30d,
+                COALESCE(SUM(oi.quantity), 0)::int AS sold_90d,
+                COALESCE(SUM(CASE WHEN o.created_at >= NOW() - interval '30 days'
+                                   THEN oi.quantity * oi.price ELSE 0 END), 0) AS revenue_30d,
+                COALESCE(SUM(CASE WHEN o.created_at >= NOW() - interval '30 days'
+                                   THEN oi.quantity * p.cost_price ELSE 0 END), 0) AS cost_30d
+            FROM order_item oi
+            JOIN "order" o ON o.id = oi.order_id
+            JOIN product p ON p.id = oi.product_id
+            WHERE oi.product_id = $1
+              AND o.status != 'cancelled'
+              AND o.created_at >= NOW() - interval '90 days'
+            """,
+            product_id,
+        )
+
     async def get_revenue_by_month(self, months: int) -> list[asyncpg.Record]:
         return await self.conn.fetch(
             """
