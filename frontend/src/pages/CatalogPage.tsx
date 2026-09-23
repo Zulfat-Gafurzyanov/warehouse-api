@@ -51,16 +51,27 @@ export function CatalogPage() {
 
   const sortedProducts = useMemo(() => {
     const list = hideOutOfStock ? products.filter((p) => p.stock > 0) : [...products];
-    switch (sort) {
-      case "price_asc":
-        return list.sort((a, b) => Number(a.price) - Number(b.price));
-      case "price_desc":
-        return list.sort((a, b) => Number(b.price) - Number(a.price));
-      case "new":
-        return list.sort((a, b) => Number(b.is_new) - Number(a.is_new));
-      default:
-        return list;
+
+    function compareByMode(a: ProductListItem, b: ProductListItem): number {
+      switch (sort) {
+        case "price_asc":
+          return Number(a.price) - Number(b.price);
+        case "price_desc":
+          return Number(b.price) - Number(a.price);
+        case "new":
+          return Number(b.is_new) - Number(a.is_new);
+        default:
+          return 0;
+      }
     }
+
+    // Товары не в наличии всегда уходят в конец списка, независимо от выбранной сортировки.
+    return list.sort((a, b) => {
+      const aOut = a.stock <= 0 ? 1 : 0;
+      const bOut = b.stock <= 0 ? 1 : 0;
+      if (aOut !== bOut) return aOut - bOut;
+      return compareByMode(a, b);
+    });
   }, [products, sort, hideOutOfStock]);
 
   function handleAddToCart(product: ProductListItem, quantity: number) {
