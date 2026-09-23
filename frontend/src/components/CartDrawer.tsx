@@ -12,7 +12,7 @@ interface CartDrawerProps {
 }
 
 export function CartDrawer({ open, onClose }: CartDrawerProps) {
-  const { items, totalAmount, totalCount, addItem, removeItem, setQuantity, clear } = useCart();
+  const { items, totalAmount, addItem, removeItem, setQuantity, clear } = useCart();
   const { show } = useToast();
   const [step, setStep] = useState<"cart" | "confirm">("cart");
   const [comment, setComment] = useState("");
@@ -249,7 +249,7 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
         <div className="cart-drawer__footer">
           {items.length > 0 && (
             <div className="cart-drawer__counts">
-              {items.length} позиций · {totalCount} шт
+              {items.length} позиций
             </div>
           )}
           <div className="cart-drawer__total">

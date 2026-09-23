@@ -19,7 +19,7 @@ export function ProductCard({
   onToggleFavorite,
 }: ProductCardProps) {
   const outOfStock = product.stock <= 0;
-  const { items, setQuantity: setCartQuantity } = useCart();
+  const { items, setQuantity: setCartQuantity, openCart } = useCart();
   const cartItem = items.find((i) => i.productId === product.id);
 
   // Пока товара нет в корзине — это просто «сколько добавить» при клике по кнопке.
@@ -47,8 +47,11 @@ export function ProductCard({
     e.preventDefault();
     e.stopPropagation();
     // Если товар уже в корзине, количество и так уже синхронизировано через степпер —
-    // кнопка нужна только как явное действие «добавить», а не как источник изменений.
-    if (!cartItem) {
+    // повторный клик не добавляет заново, а открывает корзину, чтобы наглядно
+    // показать текущий результат (иначе кнопка выглядит так, будто ничего не произошло).
+    if (cartItem) {
+      openCart();
+    } else {
       onAddToCart(product, displayQty);
     }
   }
@@ -127,8 +130,11 @@ export function ProductCard({
             </button>
           </div>
 
-          <button className="btn product-card__btn" onClick={handleAddClick}>
-            В корзину
+          <button
+            className={`btn product-card__btn ${cartItem ? "product-card__btn--in-cart" : ""}`}
+            onClick={handleAddClick}
+          >
+            {cartItem ? `✓ В корзине · ${displayQty} шт` : "В корзину"}
           </button>
         </div>
       )}
