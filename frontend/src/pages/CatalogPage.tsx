@@ -63,8 +63,8 @@ export function CatalogPage() {
     }
   }, [products, sort, hideOutOfStock]);
 
-  function handleAddToCart(product: ProductListItem) {
-    addItem(product);
+  function handleAddToCart(product: ProductListItem, quantity: number) {
+    addItem(product, quantity);
     show(`«${product.name}» добавлено в корзину`);
   }
 

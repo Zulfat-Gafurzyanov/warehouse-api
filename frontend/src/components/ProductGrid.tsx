@@ -5,7 +5,7 @@ import "./ProductGrid.css";
 
 interface ProductGridProps {
   products: ProductListItem[];
-  onAddToCart: (product: ProductListItem) => void;
+  onAddToCart: (product: ProductListItem, quantity: number) => void;
   emptyMessage?: string;
 }
 

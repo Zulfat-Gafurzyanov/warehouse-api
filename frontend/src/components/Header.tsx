@@ -12,7 +12,8 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) => (isActive ? "activ
 
 export function Header({ onCartClick }: HeaderProps) {
   const { signOut } = useAuth();
-  const { totalCount } = useCart();
+  const { items } = useCart();
+  const positionsCount = items.length;
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -66,7 +67,7 @@ export function Header({ onCartClick }: HeaderProps) {
               <circle cx="17" cy="21" r="1.4" fill="currentColor" />
             </svg>
             <span className="header__cart-label">Корзина</span>
-            {totalCount > 0 && <span className="header__cart-badge">{totalCount}</span>}
+            {positionsCount > 0 && <span className="header__cart-badge">{positionsCount}</span>}
           </button>
 
           <button

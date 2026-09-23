@@ -29,8 +29,8 @@ export function FavoritesPage() {
   // он должен пропасть из списка без перезагрузки.
   const visibleProducts = products.filter((p) => favoriteIds.has(p.id));
 
-  function handleAddToCart(product: ProductListItem) {
-    addItem(product);
+  function handleAddToCart(product: ProductListItem, quantity: number) {
+    addItem(product, quantity);
     show(`«${product.name}» добавлено в корзину`);
   }
 

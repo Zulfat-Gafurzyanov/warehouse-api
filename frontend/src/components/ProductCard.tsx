@@ -1,12 +1,13 @@
-import type { MouseEvent } from "react";
+import { useState, type MouseEvent } from "react";
 import { Link } from "react-router-dom";
 import type { ProductListItem } from "../api/types";
+import { useCart } from "../context/CartContext";
 import { formatPrice } from "../utils/format";
 import "./ProductCard.css";
 
 interface ProductCardProps {
   product: ProductListItem;
-  onAddToCart: (product: ProductListItem) => void;
+  onAddToCart: (product: ProductListItem, quantity: number) => void;
   isFavorite: boolean;
   onToggleFavorite: (product: { id: number }) => void;
 }
@@ -18,11 +19,38 @@ export function ProductCard({
   onToggleFavorite,
 }: ProductCardProps) {
   const outOfStock = product.stock <= 0;
+  const { items, setQuantity: setCartQuantity } = useCart();
+  const cartItem = items.find((i) => i.productId === product.id);
+
+  // Пока товара нет в корзине — это просто «сколько добавить» при клике по кнопке.
+  // Как только товар в корзине, количество на карточке становится живым отражением
+  // корзины: правка тут сразу меняет корзину, и наоборот.
+  const [pendingQty, setPendingQty] = useState(1);
+  const displayQty = cartItem ? cartItem.quantity : pendingQty;
 
   function handleFavoriteClick(e: MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
     onToggleFavorite(product);
+  }
+
+  function handleQtyChange(next: number) {
+    const clamped = Math.min(Math.max(next, 1), product.stock);
+    if (cartItem) {
+      setCartQuantity(product.id, clamped);
+    } else {
+      setPendingQty(clamped);
+    }
+  }
+
+  function handleAddClick(e: MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    // Если товар уже в корзине, количество и так уже синхронизировано через степпер —
+    // кнопка нужна только как явное действие «добавить», а не как источник изменений.
+    if (!cartItem) {
+      onAddToCart(product, displayQty);
+    }
   }
 
   return (
@@ -61,13 +89,55 @@ export function ProductCard({
         {outOfStock ? "Нет в наличии" : `В наличии: ${product.stock} шт.`}
       </div>
 
-      <button
-        className="btn product-card__btn"
-        disabled={outOfStock}
-        onClick={() => onAddToCart(product)}
-      >
-        {outOfStock ? "Нет в наличии" : "В корзину"}
-      </button>
+      {!outOfStock && (
+        <div className="product-card__actions">
+          <div className="product-card__stepper">
+            <button
+              type="button"
+              onClick={() => handleQtyChange(displayQty - 1)}
+              disabled={displayQty <= 1}
+              aria-label="Уменьшить количество"
+            >
+              −
+            </button>
+            <input
+              type="number"
+              className="product-card__qty-input"
+              min={1}
+              max={product.stock}
+              value={displayQty}
+              onChange={(e) => {
+                const n = e.target.valueAsNumber;
+                if (Number.isNaN(n)) return;
+                handleQtyChange(Math.trunc(n));
+              }}
+              onBlur={(e) => {
+                if (e.target.value.trim() === "") handleQtyChange(1);
+              }}
+              onFocus={(e) => e.target.select()}
+              aria-label="Количество"
+            />
+            <button
+              type="button"
+              onClick={() => handleQtyChange(displayQty + 1)}
+              disabled={displayQty >= product.stock}
+              aria-label="Увеличить количество"
+            >
+              +
+            </button>
+          </div>
+
+          <button className="btn product-card__btn" onClick={handleAddClick}>
+            В корзину
+          </button>
+        </div>
+      )}
+
+      {outOfStock && (
+        <button className="btn product-card__btn" disabled>
+          Нет в наличии
+        </button>
+      )}
     </div>
   );
 }
