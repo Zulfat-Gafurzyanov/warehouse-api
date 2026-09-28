@@ -41,5 +41,9 @@ class Settings(BaseSettings):
     # Общий секрет с bot-сервисом (совпадает с INTERNAL_API_TOKEN в bot/.env).
     INTERNAL_API_TOKEN: str = ""
 
+    # ── Загрузка фото товаров ─────────────────────────────
+    UPLOAD_DIR: str = "uploads"
+    UPLOAD_MAX_SIZE_MB: int = 5
+
 
 settings = Settings()

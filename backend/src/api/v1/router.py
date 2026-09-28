@@ -5,6 +5,7 @@ from src.api.v1.admin_analytics import router as admin_analytics_router
 from src.api.v1.admin_catalog import router as admin_catalog_router
 from src.api.v1.admin_orders import router as admin_orders_router
 from src.api.v1.admin_pricing import router as admin_pricing_router
+from src.api.v1.admin_uploads import router as admin_uploads_router
 from src.api.v1.auth import router as auth_router
 from src.api.v1.catalog import router as catalog_router
 from src.api.v1.favorites import router as favorites_router
@@ -25,3 +26,4 @@ v1_router.include_router(admin_catalog_router)
 v1_router.include_router(admin_pricing_router)
 v1_router.include_router(admin_orders_router)
 v1_router.include_router(admin_analytics_router)
+v1_router.include_router(admin_uploads_router)

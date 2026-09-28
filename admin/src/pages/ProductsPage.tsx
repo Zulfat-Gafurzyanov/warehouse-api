@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { api, ApiError } from "../api/client";
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { api, ApiError, uploadImages } from "../api/client";
 import type {
   Category,
   MonthlyPoint,
@@ -56,6 +56,8 @@ export function ProductsPage() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const [historyProduct, setHistoryProduct] = useState<ProductAdmin | null>(null);
 
@@ -91,6 +93,7 @@ export function ProductsPage() {
     setEditingProduct(null);
     setForm({ ...EMPTY_FORM, category_id: categories[0] ? String(categories[0].id) : "" });
     setFormError(null);
+    setUploadError(null);
     setModalOpen(true);
   }
 
@@ -109,7 +112,27 @@ export function ProductsPage() {
       image_urls: product.images.map((i) => i.url).join("\n"),
     });
     setFormError(null);
+    setUploadError(null);
     setModalOpen(true);
+  }
+
+  async function handlePhotoUpload(e: ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setUploadingPhotos(true);
+    setUploadError(null);
+    try {
+      const urls = await uploadImages(Array.from(files));
+      setForm((prev) => ({
+        ...prev,
+        image_urls: [prev.image_urls, ...urls].filter(Boolean).join("\n"),
+      }));
+    } catch (err) {
+      setUploadError(err instanceof ApiError ? err.message : "Не удалось загрузить фото");
+    } finally {
+      setUploadingPhotos(false);
+      e.target.value = ""; // чтобы можно было выбрать тот же файл повторно
+    }
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -359,14 +382,35 @@ export function ProductsPage() {
               />
             </label>
 
-            <label className="form-field">
-              Фотографии — по одной ссылке на строку
+            <div className="form-field">
+              <label htmlFor="product-image-urls">Фотографии — по одной ссылке на строку</label>
+
+              <div className="product-photo-upload">
+                <input
+                  type="file"
+                  id="product-photo-input"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  disabled={uploadingPhotos}
+                  onChange={handlePhotoUpload}
+                  style={{ display: "none" }}
+                />
+                <label htmlFor="product-photo-input" className="btn btn--outline btn--sm">
+                  {uploadingPhotos ? "Загрузка..." : "Загрузить фото"}
+                </label>
+                <span className="form-hint" style={{ margin: 0 }}>
+                  JPG, PNG или WEBP, до 5 МБ на файл — можно выбрать сразу несколько
+                </span>
+              </div>
+              {uploadError && <p className="form-error">{uploadError}</p>}
+
               <textarea
+                id="product-image-urls"
                 value={form.image_urls}
                 onChange={(e) => setForm({ ...form, image_urls: e.target.value })}
-                placeholder="https://example.com/photo1.jpg"
+                placeholder="Загрузите фото кнопкой выше — или вставьте ссылку вручную"
               />
-            </label>
+            </div>
 
             <label className="checkbox-field">
               <input

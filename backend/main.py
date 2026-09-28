@@ -1,8 +1,10 @@
+import os
 from contextlib import asynccontextmanager
 
 import redis.asyncio as redis
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from src.api import deps
 from src.api.v1.router import v1_router
@@ -48,6 +50,11 @@ app.add_middleware(
 )
 
 app.add_middleware(LoggingMiddleware)
+
+# ── Статика (загруженные фото товаров) ────────────────────────
+
+os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
 # ── Routes ───────────────────────────────────────────────────
 

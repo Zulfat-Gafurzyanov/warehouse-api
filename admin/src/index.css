@@ -341,6 +341,14 @@ table.data-table {
   margin-bottom: 14px;
 }
 
+.product-photo-upload {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
 .checkbox-field {
   display: flex;
   align-items: center;

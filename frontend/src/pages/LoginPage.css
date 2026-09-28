@@ -73,3 +73,8 @@
   text-align: center;
   margin: 0;
 }
+
+.login-card__hint a {
+  color: var(--color-primary);
+  font-weight: 600;
+}

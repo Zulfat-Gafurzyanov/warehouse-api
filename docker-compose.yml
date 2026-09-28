@@ -52,6 +52,9 @@ services:
         condition: service_started
     ports:
       - "8000:8000"
+    volumes:
+      # Загруженные фото товаров — должны переживать пересборку/перезапуск контейнера.
+      - uploads:/app/uploads
 
   frontend:
     build:
@@ -80,3 +83,4 @@ services:
 volumes:
   pgdata:
   redisdata:
+  uploads:

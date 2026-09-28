@@ -62,6 +62,12 @@ export function LoginPage() {
         <p className="login-card__hint">
           Логин и пароль выдаёт администратор — самостоятельная регистрация недоступна.
         </p>
+        <p className="login-card__hint">
+          Проблемы со входом?{" "}
+          <a href="https://t.me/Toador" target="_blank" rel="noopener noreferrer">
+            Напишите нам в Telegram
+          </a>
+        </p>
       </form>
     </div>
   );

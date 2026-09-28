@@ -69,3 +69,30 @@ export const api = {
   patch: <T>(path: string, body?: unknown) => request<T>(path, { method: "PATCH", body }),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 };
+
+/** Загрузка фото — отдельно от api.*, потому что тут нужен multipart/form-data,
+ *  а не JSON (Content-Type с boundary браузер проставляет сам, если его не задавать вручную). */
+export async function uploadImages(files: File[]): Promise<string[]> {
+  const formData = new FormData();
+  for (const file of files) formData.append("files", file);
+
+  const headers: Record<string, string> = {};
+  if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+
+  const response = await fetch(`${API_BASE_URL}/admin/uploads/images`, {
+    method: "POST",
+    headers,
+    body: formData,
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const message =
+      (data && typeof data.detail === "string" && data.detail) ||
+      `Ошибка запроса (${response.status})`;
+    throw new ApiError(response.status, message);
+  }
+
+  return data as string[];
+}
