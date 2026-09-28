@@ -224,7 +224,7 @@ export function ProductsPage() {
     <div>
       <div className="page-header">
         <div>
-          <h1>Товары</h1>
+          <h1>Склад</h1>
           <div className="page-header__sub">{products.length} товаров</div>
         </div>
         <button className="btn" onClick={openCreate}>

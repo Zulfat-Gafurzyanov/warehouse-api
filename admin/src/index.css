@@ -448,6 +448,21 @@ table.data-table {
   background: var(--color-bg-muted);
 }
 
+.receipt-line-thumb {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  cursor: pointer;
+  border: 1px solid var(--color-border);
+}
+
+.receipt-line-thumb--empty {
+  background: var(--color-bg-muted);
+  cursor: default;
+}
+
 .checkbox-field {
   display: flex;
   align-items: center;

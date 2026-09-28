@@ -8,9 +8,12 @@ interface DraftLine {
   productId: number;
   sku: string;
   name: string;
+  imageUrl: string | null;
   quantity: string;
   unitCost: string;
 }
+
+const DROPDOWN_CLOSE_DELAY_MS = 150;
 
 export function ReceiptsPage() {
   const [receipts, setReceipts] = useState<ReceiptListItem[]>([]);
@@ -22,11 +25,13 @@ export function ReceiptsPage() {
   const [lines, setLines] = useState<DraftLine[]>([]);
   const [comment, setComment] = useState("");
   const [search, setSearch] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const [detailReceipt, setDetailReceipt] = useState<ReceiptOut | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   function load() {
     setIsLoading(true);
@@ -55,17 +60,18 @@ export function ReceiptsPage() {
     }
   }
 
-  const searchResults =
-    search.trim().length === 0
-      ? []
-      : products
+  const availableProducts = products.filter((p) => !lines.some((l) => l.productId === p.id));
+  const searchResults = !dropdownOpen
+    ? []
+    : search.trim().length === 0
+      ? availableProducts.slice(0, 20)
+      : availableProducts
           .filter(
             (p) =>
-              !lines.some((l) => l.productId === p.id) &&
-              (p.name.toLowerCase().includes(search.trim().toLowerCase()) ||
-                p.sku.toLowerCase().includes(search.trim().toLowerCase())),
+              p.name.toLowerCase().includes(search.trim().toLowerCase()) ||
+              p.sku.toLowerCase().includes(search.trim().toLowerCase()),
           )
-          .slice(0, 8);
+          .slice(0, 20);
 
   function addLine(product: ProductAdmin) {
     setLines((prev) => [
@@ -74,6 +80,7 @@ export function ReceiptsPage() {
         productId: product.id,
         sku: product.sku,
         name: product.name,
+        imageUrl: product.images[0]?.url ?? null,
         quantity: "1",
         unitCost: product.cost_price,
       },
@@ -188,22 +195,15 @@ export function ReceiptsPage() {
       {modalOpen && (
         <Modal title="Новая приёмка" onClose={() => setModalOpen(false)} wide>
           <form onSubmit={handleSubmit}>
-            <label className="form-field">
-              Комментарий (необязательно)
-              <input
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="Например: накладная от поставщика №55"
-              />
-            </label>
-
             <label className="form-field" style={{ position: "relative" }}>
               Добавить товар
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                placeholder="Начните вводить название или артикул"
+                onFocus={() => setDropdownOpen(true)}
+                onBlur={() => setTimeout(() => setDropdownOpen(false), DROPDOWN_CLOSE_DELAY_MS)}
+                placeholder="Начните вводить название или артикул — либо откройте список"
                 autoComplete="off"
               />
               {searchResults.length > 0 && (
@@ -226,6 +226,7 @@ export function ReceiptsPage() {
               <table className="data-table" style={{ marginBottom: 16 }}>
                 <thead>
                   <tr>
+                    <th></th>
                     <th>Товар</th>
                     <th>Количество</th>
                     <th>Цена закупки, ₽</th>
@@ -235,6 +236,18 @@ export function ReceiptsPage() {
                 <tbody>
                   {lines.map((line, i) => (
                     <tr key={line.productId}>
+                      <td>
+                        {line.imageUrl ? (
+                          <img
+                            src={line.imageUrl}
+                            alt=""
+                            className="receipt-line-thumb"
+                            onClick={() => setZoomedImage(line.imageUrl)}
+                          />
+                        ) : (
+                          <div className="receipt-line-thumb receipt-line-thumb--empty" />
+                        )}
+                      </td>
                       <td>
                         {line.name}{" "}
                         <span style={{ color: "var(--color-text-muted)" }}>({line.sku})</span>
@@ -274,6 +287,15 @@ export function ReceiptsPage() {
               </table>
             )}
 
+            <label className="form-field">
+              Комментарий (необязательно)
+              <input
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Например: накладная от поставщика №55"
+              />
+            </label>
+
             {formError && <p className="form-error">{formError}</p>}
 
             <div className="modal__footer">
@@ -285,6 +307,12 @@ export function ReceiptsPage() {
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {zoomedImage && (
+        <Modal title="Фото товара" onClose={() => setZoomedImage(null)}>
+          <img src={zoomedImage} alt="" style={{ width: "100%", borderRadius: "var(--radius-md)" }} />
         </Modal>
       )}
 
