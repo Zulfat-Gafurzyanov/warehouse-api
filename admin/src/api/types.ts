@@ -191,9 +191,39 @@ export interface StockHistoryEntry {
   created_at: string;
 }
 
-export interface StockReceiptInput {
+export interface ReceiptItemInput {
+  product_id: number;
   quantity: number;
   unit_cost: string;
+}
+
+export interface ReceiptCreateInput {
+  comment?: string | null;
+  items: ReceiptItemInput[];
+}
+
+export interface ReceiptItemOut {
+  product_id: number;
+  product_name: string;
+  product_sku: string;
+  quantity: number;
+  unit_cost: string;
+}
+
+export interface ReceiptOut {
+  id: number;
+  comment: string | null;
+  created_at: string;
+  items: ReceiptItemOut[];
+}
+
+export interface ReceiptListItem {
+  id: number;
+  comment: string | null;
+  created_at: string;
+  item_count: number;
+  total_quantity: number;
+  total_cost: string;
 }
 
 export interface PriceHistoryEntry {

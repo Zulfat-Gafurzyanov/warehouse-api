@@ -18,6 +18,7 @@ from src.repository.group_price import GroupPriceRepository
 from src.repository.order import OrderRepository
 from src.repository.price_group import PriceGroupRepository
 from src.repository.product import ProductRepository
+from src.repository.receipt import ReceiptRepository
 from src.repository.user import UserRepository
 from src.repository.user_price import UserPriceRepository
 from src.service.analytics import AnalyticsService
@@ -28,6 +29,7 @@ from src.service.order import OrderService
 from src.service.price_group import PriceGroupService
 from src.service.notification_client import NotificationClient
 from src.service.product import ProductService
+from src.service.receipt import ReceiptService
 from src.service.user import UserService
 from src.service.user_price import UserPriceService
 
@@ -140,6 +142,12 @@ async def get_analytics_repository(
     return AnalyticsRepository(conn)
 
 
+async def get_receipt_repository(
+    conn: Annotated[asyncpg.Connection, Depends(get_db)],
+) -> ReceiptRepository:
+    return ReceiptRepository(conn)
+
+
 # ── Сервисы ──────────────────────────────────────────────
 
 
@@ -166,6 +174,12 @@ async def get_product_service(
     repo: Annotated[ProductRepository, Depends(get_product_repository)],
 ) -> ProductService:
     return ProductService(repo)
+
+
+async def get_receipt_service(
+    repo: Annotated[ReceiptRepository, Depends(get_receipt_repository)],
+) -> ReceiptService:
+    return ReceiptService(repo)
 
 
 async def get_price_group_service(

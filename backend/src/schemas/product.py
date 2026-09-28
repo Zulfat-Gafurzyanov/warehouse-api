@@ -102,11 +102,3 @@ class PriceHistoryOut(BaseModel):
     old_price: Decimal | None
     new_price: Decimal
     created_at: dt.datetime
-
-
-class StockReceiptCreate(BaseModel):
-    """Приёмка товара: увеличивает остаток и пересчитывает cost_price товара
-    по средневзвешенной себестоимости — как принято в бухучёте."""
-
-    quantity: int = Field(gt=0)
-    unit_cost: Decimal = Field(ge=0)

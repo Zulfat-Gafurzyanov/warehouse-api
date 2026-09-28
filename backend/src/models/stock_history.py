@@ -30,6 +30,11 @@ class StockHistory(Base):
         sa.ForeignKey("order.id", ondelete="SET NULL"),
         nullable=True,
     )
+    receipt_id: Mapped[int | None] = mapped_column(
+        sa.BigInteger,
+        sa.ForeignKey("stock_receipt.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     unit_cost: Mapped[float | None] = mapped_column(sa.Numeric(12, 2), nullable=True)
     created_at: Mapped[dt.datetime] = mapped_column(
         sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)

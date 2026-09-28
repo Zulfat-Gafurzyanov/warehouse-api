@@ -9,6 +9,7 @@ const ITEMS = [
   { to: "/", label: "Дашборд", exact: true },
   { to: "/orders", label: "Заказы" },
   { to: "/products", label: "Товары" },
+  { to: "/receipts", label: "Приёмка" },
   { to: "/categories", label: "Категории" },
   { to: "/clients", label: "Клиенты" },
   { to: "/price-groups", label: "Ценовые группы" },

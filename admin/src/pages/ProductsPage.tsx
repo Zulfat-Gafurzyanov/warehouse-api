@@ -587,12 +587,12 @@ function ProductHistoryModal({
     setReceiptSubmitting(true);
     setReceiptError(null);
     try {
-      const updated = await api.post<ProductAdmin>(`/admin/products/${product.id}/receipts`, {
-        quantity: Number(receiptQty),
-        unit_cost: receiptCost,
+      await api.post("/admin/receipts", {
+        items: [{ product_id: product.id, quantity: Number(receiptQty), unit_cost: receiptCost }],
       });
       setReceiptQty("");
       setReceiptCost("");
+      const updated = await api.get<ProductAdmin>(`/admin/products/${product.id}`);
       onReceived(updated);
       await loadStockHistory();
     } catch (e) {
