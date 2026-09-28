@@ -349,6 +349,70 @@ table.data-table {
   margin-bottom: 8px;
 }
 
+.product-photo-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.product-photo-gallery__item {
+  position: relative;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: #fff;
+}
+
+.product-photo-gallery__item img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+
+.product-photo-gallery__badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+
+.product-photo-gallery__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+}
+
+.product-photo-gallery__actions .btn {
+  width: 100%;
+  padding: 5px 8px;
+  font-size: 11px;
+}
+
+.product-photo-add-url {
+  display: flex;
+  gap: 8px;
+}
+
+.product-photo-add-url input {
+  flex: 1;
+  padding: 9px 11px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--color-text);
+  background: #fff;
+}
+
 .checkbox-field {
   display: flex;
   align-items: center;

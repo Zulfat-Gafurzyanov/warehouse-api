@@ -26,7 +26,8 @@ interface FormState {
   stock: string;
   is_new: boolean;
   is_active: boolean;
-  image_urls: string;
+  // Первая ссылка — основное фото (то, что показывается на карточке в каталоге).
+  image_urls: string[];
 }
 
 const EMPTY_FORM: FormState = {
@@ -39,7 +40,7 @@ const EMPTY_FORM: FormState = {
   stock: "0",
   is_new: false,
   is_active: true,
-  image_urls: "",
+  image_urls: [],
 };
 
 export function ProductsPage() {
@@ -58,6 +59,7 @@ export function ProductsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [newPhotoUrl, setNewPhotoUrl] = useState("");
 
   const [historyProduct, setHistoryProduct] = useState<ProductAdmin | null>(null);
 
@@ -94,6 +96,7 @@ export function ProductsPage() {
     setForm({ ...EMPTY_FORM, category_id: categories[0] ? String(categories[0].id) : "" });
     setFormError(null);
     setUploadError(null);
+    setNewPhotoUrl("");
     setModalOpen(true);
   }
 
@@ -109,10 +112,11 @@ export function ProductsPage() {
       stock: String(product.stock),
       is_new: product.is_new,
       is_active: product.is_active,
-      image_urls: product.images.map((i) => i.url).join("\n"),
+      image_urls: product.images.map((i) => i.url),
     });
     setFormError(null);
     setUploadError(null);
+    setNewPhotoUrl("");
     setModalOpen(true);
   }
 
@@ -123,10 +127,7 @@ export function ProductsPage() {
     setUploadError(null);
     try {
       const urls = await uploadImages(Array.from(files));
-      setForm((prev) => ({
-        ...prev,
-        image_urls: [prev.image_urls, ...urls].filter(Boolean).join("\n"),
-      }));
+      setForm((prev) => ({ ...prev, image_urls: [...prev.image_urls, ...urls] }));
     } catch (err) {
       setUploadError(err instanceof ApiError ? err.message : "Не удалось загрузить фото");
     } finally {
@@ -135,15 +136,32 @@ export function ProductsPage() {
     }
   }
 
+  function handleAddPhotoUrl() {
+    const trimmed = newPhotoUrl.trim();
+    if (!trimmed) return;
+    setForm((prev) => ({ ...prev, image_urls: [...prev.image_urls, trimmed] }));
+    setNewPhotoUrl("");
+  }
+
+  function makePhotoPrimary(index: number) {
+    setForm((prev) => {
+      const urls = [...prev.image_urls];
+      const [chosen] = urls.splice(index, 1);
+      urls.unshift(chosen);
+      return { ...prev, image_urls: urls };
+    });
+  }
+
+  function removePhoto(index: number) {
+    setForm((prev) => ({ ...prev, image_urls: prev.image_urls.filter((_, i) => i !== index) }));
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     setFormError(null);
 
-    const image_urls = form.image_urls
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean);
+    const image_urls = form.image_urls;
 
     try {
       if (editingProduct) {
@@ -383,7 +401,7 @@ export function ProductsPage() {
             </label>
 
             <div className="form-field">
-              <label htmlFor="product-image-urls">Фотографии — по одной ссылке на строку</label>
+              <span>Фотографии</span>
 
               <div className="product-photo-upload">
                 <input
@@ -404,12 +422,58 @@ export function ProductsPage() {
               </div>
               {uploadError && <p className="form-error">{uploadError}</p>}
 
-              <textarea
-                id="product-image-urls"
-                value={form.image_urls}
-                onChange={(e) => setForm({ ...form, image_urls: e.target.value })}
-                placeholder="Загрузите фото кнопкой выше — или вставьте ссылку вручную"
-              />
+              {form.image_urls.length > 0 && (
+                <div className="product-photo-gallery">
+                  {form.image_urls.map((url, i) => (
+                    <div key={`${url}-${i}`} className="product-photo-gallery__item">
+                      <img src={url} alt="" />
+                      {i === 0 && (
+                        <span className="product-photo-gallery__badge">Основное</span>
+                      )}
+                      <div className="product-photo-gallery__actions">
+                        {i !== 0 && (
+                          <button
+                            type="button"
+                            className="btn btn--outline btn--sm"
+                            onClick={() => makePhotoPrimary(i)}
+                          >
+                            Сделать основным
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="btn btn--danger btn--sm"
+                          onClick={() => removePhoto(i)}
+                        >
+                          Удалить
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="product-photo-add-url">
+                <input
+                  type="text"
+                  placeholder="Или вставьте ссылку на фото"
+                  value={newPhotoUrl}
+                  onChange={(e) => setNewPhotoUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddPhotoUrl();
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn btn--outline btn--sm"
+                  onClick={handleAddPhotoUrl}
+                >
+                  Добавить
+                </button>
+              </div>
             </div>
 
             <label className="checkbox-field">
