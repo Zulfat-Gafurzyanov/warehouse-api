@@ -42,17 +42,17 @@ class OrderRepository:
             )
             await self.conn.executemany(
                 """
-                INSERT INTO order_item (order_id, product_id, quantity, price)
-                VALUES ($1, $2, $3, $4)
+                INSERT INTO order_item (order_id, product_id, quantity, price, unit_cost)
+                VALUES ($1, $2, $3, $4, $5)
                 """,
-                [(order["id"], i["product_id"], i["quantity"], i["price"]) for i in items],
+                [(order["id"], i["product_id"], i["quantity"], i["price"], i["unit_cost"]) for i in items],
             )
             await self.conn.executemany(
                 """
-                INSERT INTO stock_history (product_id, change, reason, order_id)
-                VALUES ($1, $2, 'order', $3)
+                INSERT INTO stock_history (product_id, change, reason, order_id, unit_cost)
+                VALUES ($1, $2, 'order', $3, $4)
                 """,
-                [(i["product_id"], -i["quantity"], order["id"]) for i in items],
+                [(i["product_id"], -i["quantity"], order["id"], i["unit_cost"]) for i in items],
             )
         return order
 

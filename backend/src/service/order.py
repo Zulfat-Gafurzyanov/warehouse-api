@@ -33,6 +33,7 @@ class OrderService:
                 "name": product["name"],
                 "sku": product["sku"],
                 "price": product["price"],
+                "unit_cost": product["cost_price"],
                 "quantity": item.quantity,
             })
 

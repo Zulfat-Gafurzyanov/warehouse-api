@@ -27,5 +27,8 @@ class OrderItem(Base):
     )
     quantity: Mapped[int] = mapped_column(sa.Integer, nullable=False)
     price: Mapped[float] = mapped_column(sa.Numeric(12, 2), nullable=False)
+    # Себестоимость товара на момент заказа (снимок Product.cost_price) — без неё
+    # прибыль по старым заказам задним числом пересчитывалась бы при каждой новой приёмке.
+    unit_cost: Mapped[float | None] = mapped_column(sa.Numeric(12, 2), nullable=True)
     created_at: Mapped[dt.datetime] = mapped_column(
         sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)

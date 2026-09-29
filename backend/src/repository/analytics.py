@@ -144,12 +144,17 @@ class AnalyticsRepository:
         )
 
     async def get_month_margin(self) -> asyncpg.Record:
-        """Выручка, себестоимость и количество проданного за текущий месяц."""
+        """Выручка, себестоимость и количество проданного за текущий месяц.
+
+        Себестоимость берётся из снимка на момент заказа (order_item.unit_cost), а не из
+        текущей product.cost_price — иначе новая приёмка задним числом меняла бы прибыль
+        по уже закрытым месяцам. COALESCE — подстраховка для заказов до миграции снимка.
+        """
         return await self.conn.fetchrow(
             """
             SELECT
                 COALESCE(SUM(oi.quantity * oi.price), 0) AS revenue,
-                COALESCE(SUM(oi.quantity * p.cost_price), 0) AS cost,
+                COALESCE(SUM(oi.quantity * COALESCE(oi.unit_cost, p.cost_price)), 0) AS cost,
                 COALESCE(SUM(oi.quantity), 0)::int AS units
             FROM order_item oi
             JOIN "order" o ON o.id = oi.order_id
@@ -206,7 +211,7 @@ class AnalyticsRepository:
                 COALESCE(SUM(CASE WHEN o.created_at >= NOW() - interval '30 days'
                                    THEN oi.quantity * oi.price ELSE 0 END), 0) AS revenue_30d,
                 COALESCE(SUM(CASE WHEN o.created_at >= NOW() - interval '30 days'
-                                   THEN oi.quantity * p.cost_price ELSE 0 END), 0) AS cost_30d,
+                                   THEN oi.quantity * COALESCE(oi.unit_cost, p.cost_price) ELSE 0 END), 0) AS cost_30d,
                 COALESCE((
                     SELECT AVG(oi2.quantity)
                     FROM order_item oi2

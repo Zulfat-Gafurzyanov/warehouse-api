@@ -223,7 +223,7 @@ class ProductRepository:
         """Резолв цены/остатка под конкретного клиента для набора товаров — используется при оформлении заказа."""
         return await self.conn.fetch(
             f"""
-            SELECT p.id, p.name, p.sku, p.stock, p.is_active,
+            SELECT p.id, p.name, p.sku, p.stock, p.is_active, p.cost_price,
                    {_RESOLVED_PRICE} AS price
             FROM product p
             {_CLIENT_PRICE_JOIN}

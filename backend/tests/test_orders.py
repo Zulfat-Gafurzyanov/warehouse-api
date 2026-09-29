@@ -40,7 +40,7 @@ async def test_create_order_insufficient_stock(client: AsyncClient, mock_db_conn
     mock_db_conn.fetchrow.return_value = _active_user_record(1)
     mock_db_conn.fetch.return_value = [{
         "id": 1, "name": "Магнит", "sku": "MAG-001",
-        "stock": 2, "is_active": True, "price": "100.00",
+        "stock": 2, "is_active": True, "price": "100.00", "cost_price": "60.00",
     }]
 
     resp = await client.post(
