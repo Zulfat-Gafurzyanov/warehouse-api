@@ -7,7 +7,7 @@ from src.db.base import Base, TimestampMixin
 
 
 class UserPrice(TimestampMixin, Base):
-    """Индивидуальная цена имеет приоритет над ценой группы (PriceGroup) и базовой ценой (Product.base_price)."""
+    """Индивидуальная цена имеет приоритет над базовой ценой (Product.base_price)."""
 
     __tablename__ = "user_price"
 

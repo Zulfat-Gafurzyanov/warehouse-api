@@ -28,7 +28,7 @@ async def test_admin_can_reset_client_password(client: AsyncClient, mock_db_conn
             "id": 5, "login": "client-login", "is_active": True,
             "created_at": "2025-01-01T00:00:00Z", "role": "user",
             "company_name": None, "contact_name": None,
-            "cooperation_type": None, "price_group_id": None,
+            "cooperation_type": None,
         },
     ]
 
@@ -69,57 +69,6 @@ async def test_set_role_endpoint_does_not_exist(client: AsyncClient, mock_db_con
     assert resp.status_code == 404
 
 
-# ── Переименование ценовой группы ────────────────────────
-
-
-@pytest.mark.asyncio
-async def test_admin_can_rename_price_group(client: AsyncClient, mock_db_conn):
-    mock_db_conn.fetchrow.side_effect = [
-        _admin_record(),
-        {
-            "id": 2, "name": "Опт 1", "discount_percent": None,
-            "created_at": "2025-01-01T00:00:00Z", "updated_at": "2025-01-02T00:00:00Z",
-        },
-    ]
-
-    resp = await client.patch(
-        "/api/v1/admin/price-groups/2",
-        headers=_auth_header(1, "admin"),
-        json={"name": "Опт 1"},
-    )
-    assert resp.status_code == 200
-    assert resp.json()["name"] == "Опт 1"
-
-
-@pytest.mark.asyncio
-async def test_rename_price_group_duplicate_conflict(client: AsyncClient, mock_db_conn):
-    async def fetchrow_side_effect(query, *args, **kwargs):
-        if 'FROM "user"' in query:
-            return _admin_record()
-        raise UniqueViolationError("duplicate key")
-
-    mock_db_conn.fetchrow.side_effect = fetchrow_side_effect
-
-    resp = await client.patch(
-        "/api/v1/admin/price-groups/2",
-        headers=_auth_header(1, "admin"),
-        json={"name": "Опт 1"},
-    )
-    assert resp.status_code == 409
-
-
-@pytest.mark.asyncio
-async def test_rename_price_group_not_found(client: AsyncClient, mock_db_conn):
-    mock_db_conn.fetchrow.side_effect = [_admin_record(), None]
-
-    resp = await client.patch(
-        "/api/v1/admin/price-groups/999",
-        headers=_auth_header(1, "admin"),
-        json={"name": "Опт 1"},
-    )
-    assert resp.status_code == 404
-
-
 # ── Смена логина клиента админом ──────────────────────────
 
 
@@ -131,7 +80,7 @@ async def test_admin_can_update_client_login(client: AsyncClient, mock_db_conn):
             "id": 5, "login": "new-login", "is_active": True,
             "created_at": "2025-01-01T00:00:00Z", "role": "user",
             "company_name": None, "contact_name": None,
-            "cooperation_type": None, "price_group_id": None,
+            "cooperation_type": None,
         },
     ]
 

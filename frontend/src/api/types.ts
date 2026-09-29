@@ -59,7 +59,6 @@ export interface UserProfile {
   company_name: string | null;
   contact_name: string | null;
   cooperation_type: string | null;
-  price_group_id: number | null;
 }
 
 export interface OrderItemOut {

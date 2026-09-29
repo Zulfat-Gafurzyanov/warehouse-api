@@ -24,7 +24,6 @@ class UserProfile(BaseModel):
     company_name: str | None = None
     contact_name: str | None = None
     cooperation_type: CooperationType | None = None
-    price_group_id: int | None = None
 
 
 class UserUpdate(BaseModel):
@@ -53,7 +52,6 @@ class ClientCreate(BaseModel):
     company_name: str | None = None
     contact_name: str | None = None
     cooperation_type: CooperationType | None = None
-    price_group_id: int | None = None
 
 
 class ClientProfileUpdate(BaseModel):
@@ -61,4 +59,3 @@ class ClientProfileUpdate(BaseModel):
     company_name: str | None = None
     contact_name: str | None = None
     cooperation_type: CooperationType | None = None
-    price_group_id: int | None = None

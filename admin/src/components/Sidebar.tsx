@@ -12,7 +12,6 @@ const ITEMS = [
   { to: "/receipts", label: "Приёмка" },
   { to: "/categories", label: "Категории" },
   { to: "/clients", label: "Клиенты" },
-  { to: "/price-groups", label: "Ценовые группы" },
 ];
 
 export function Sidebar() {

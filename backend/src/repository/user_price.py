@@ -29,6 +29,20 @@ class UserPriceRepository:
             user_id,
         )
 
+    async def get_price_list_for_user(self, user_id: int) -> list[asyncpg.Record]:
+        """Полный список товаров с действующей ценой клиента — база для страницы настройки цен."""
+        return await self.conn.fetch(
+            """
+            SELECT p.id AS product_id, p.sku AS product_sku, p.name AS product_name,
+                   p.base_price, COALESCE(up.price, p.base_price) AS price,
+                   (up.price IS NOT NULL) AS is_custom
+            FROM product p
+            LEFT JOIN user_price up ON up.product_id = p.id AND up.user_id = $1
+            ORDER BY p.name
+            """,
+            user_id,
+        )
+
     async def delete(self, user_id: int, product_id: int) -> bool:
         result = await self.conn.execute(
             "DELETE FROM user_price WHERE user_id = $1 AND product_id = $2",

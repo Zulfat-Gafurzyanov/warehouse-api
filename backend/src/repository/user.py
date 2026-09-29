@@ -2,7 +2,7 @@ import asyncpg
 
 _PROFILE_COLUMNS = """
     id, login, is_active, created_at, role,
-    company_name, contact_name, cooperation_type, price_group_id
+    company_name, contact_name, cooperation_type
 """
 
 
@@ -17,16 +17,15 @@ class UserRepository:
         company_name: str | None,
         contact_name: str | None,
         cooperation_type: str | None,
-        price_group_id: int | None,
     ) -> asyncpg.Record | None:
         """Создание клиента администратором — со всеми B2B-реквизитами сразу."""
         return await self.conn.fetchrow(
             f"""
-            INSERT INTO "user" (login, password_hash, company_name, contact_name, cooperation_type, price_group_id)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO "user" (login, password_hash, company_name, contact_name, cooperation_type)
+            VALUES ($1, $2, $3, $4, $5)
             RETURNING {_PROFILE_COLUMNS}
             """,
-            login, password_hash, company_name, contact_name, cooperation_type, price_group_id,
+            login, password_hash, company_name, contact_name, cooperation_type,
         )
 
     async def get_all(self, limit: int, offset: int) -> list[asyncpg.Record]:

@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import {
   COOPERATION_LABELS,
   type ClientCreateInput,
   type CooperationType,
-  type PriceGroup,
   type UserProfile,
 } from "../api/types";
 import { Modal } from "../components/Modal";
@@ -16,7 +15,6 @@ interface CreateFormState {
   company_name: string;
   contact_name: string;
   cooperation_type: CooperationType | "";
-  price_group_id: string;
 }
 
 const EMPTY_CREATE: CreateFormState = {
@@ -25,12 +23,10 @@ const EMPTY_CREATE: CreateFormState = {
   company_name: "",
   contact_name: "",
   cooperation_type: "",
-  price_group_id: "",
 };
 
 export function ClientsPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
-  const [priceGroups, setPriceGroups] = useState<PriceGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -50,14 +46,6 @@ export function ClientsPage() {
   }
 
   useEffect(load, []);
-  useEffect(() => {
-    api.get<PriceGroup[]>("/admin/price-groups").then(setPriceGroups).catch(() => {});
-  }, []);
-
-  const priceGroupName = useMemo(() => {
-    const map = new Map(priceGroups.map((g) => [g.id, g.name]));
-    return (id: number | null) => (id ? (map.get(id) ?? `#${id}`) : "—");
-  }, [priceGroups]);
 
   const filtered = users.filter((u) => {
     const q = search.trim().toLowerCase();
@@ -86,7 +74,6 @@ export function ClientsPage() {
         company_name: createForm.company_name || null,
         contact_name: createForm.contact_name || null,
         cooperation_type: createForm.cooperation_type || null,
-        price_group_id: createForm.price_group_id ? Number(createForm.price_group_id) : null,
       };
       await api.post("/admin/users", body);
       setCreateOpen(false);
@@ -143,7 +130,6 @@ export function ClientsPage() {
                 <th>Компания</th>
                 <th>Контакт</th>
                 <th>Сотрудничество</th>
-                <th>Ценовая группа</th>
                 <th>Роль</th>
                 <th>Статус</th>
                 <th></th>
@@ -160,7 +146,6 @@ export function ClientsPage() {
                   <td>{u.company_name || "—"}</td>
                   <td>{u.contact_name || "—"}</td>
                   <td>{u.cooperation_type ? COOPERATION_LABELS[u.cooperation_type] : "—"}</td>
-                  <td>{priceGroupName(u.price_group_id)}</td>
                   <td>
                     <span className={`badge ${u.role === "admin" ? "badge--info" : "badge--muted"}`}>
                       {u.role === "admin" ? "Админ" : "Клиент"}
@@ -234,38 +219,22 @@ export function ClientsPage() {
               </label>
             </div>
 
-            <div className="form-row">
-              <label className="form-field">
-                Тип сотрудничества
-                <select
-                  value={createForm.cooperation_type}
-                  onChange={(e) =>
-                    setCreateForm({ ...createForm, cooperation_type: e.target.value as CooperationType | "" })
-                  }
-                >
-                  <option value="">Не указан</option>
-                  {Object.entries(COOPERATION_LABELS).map(([k, label]) => (
-                    <option key={k} value={k}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="form-field">
-                Ценовая группа
-                <select
-                  value={createForm.price_group_id}
-                  onChange={(e) => setCreateForm({ ...createForm, price_group_id: e.target.value })}
-                >
-                  <option value="">Без группы</option>
-                  {priceGroups.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
+            <label className="form-field">
+              Тип сотрудничества
+              <select
+                value={createForm.cooperation_type}
+                onChange={(e) =>
+                  setCreateForm({ ...createForm, cooperation_type: e.target.value as CooperationType | "" })
+                }
+              >
+                <option value="">Не указан</option>
+                {Object.entries(COOPERATION_LABELS).map(([k, label]) => (
+                  <option key={k} value={k}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
             {createError && <p className="form-error">{createError}</p>}
 

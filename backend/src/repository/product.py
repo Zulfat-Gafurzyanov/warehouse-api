@@ -5,23 +5,12 @@ _ADMIN_COLUMNS = """
     stock, is_active, is_new, created_at, updated_at
 """
 
-# Приоритет из ТЗ: индивидуальная цена > точечная цена группы на товар >
-# скидка группы (%) от базовой цены > базовая цена.
+# Приоритет: индивидуальная цена клиента > базовая цена.
 _CLIENT_PRICE_JOIN = """
     LEFT JOIN user_price up ON up.product_id = p.id AND up.user_id = $1
-    LEFT JOIN "user" u ON u.id = $1
-    LEFT JOIN group_price gp ON gp.product_id = p.id AND gp.price_group_id = u.price_group_id
-    LEFT JOIN price_group pgrp ON pgrp.id = u.price_group_id
 """
 
-_RESOLVED_PRICE = """
-    COALESCE(
-        up.price,
-        gp.price,
-        ROUND(p.base_price * (1 - pgrp.discount_percent / 100), 2),
-        p.base_price
-    )
-"""
+_RESOLVED_PRICE = "COALESCE(up.price, p.base_price)"
 
 
 class ProductRepository:

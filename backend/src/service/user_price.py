@@ -2,7 +2,7 @@ from asyncpg.exceptions import ForeignKeyViolationError
 from fastapi import HTTPException, status
 
 from src.repository.user_price import UserPriceRepository
-from src.schemas.user_price import UserPriceOut
+from src.schemas.user_price import UserPriceListItem, UserPriceOut
 
 
 class UserPriceService:
@@ -21,6 +21,10 @@ class UserPriceService:
     async def get_all_for_user(self, user_id: int) -> list[UserPriceOut]:
         prices = await self.repository.get_all_for_user(user_id)
         return [UserPriceOut(**dict(p)) for p in prices]
+
+    async def get_price_list_for_user(self, user_id: int) -> list[UserPriceListItem]:
+        rows = await self.repository.get_price_list_for_user(user_id)
+        return [UserPriceListItem(**dict(r)) for r in rows]
 
     async def delete_price(self, user_id: int, product_id: int) -> None:
         deleted = await self.repository.delete(user_id, product_id)

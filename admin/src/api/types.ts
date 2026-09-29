@@ -70,7 +70,6 @@ export interface UserProfile {
   company_name: string | null;
   contact_name: string | null;
   cooperation_type: CooperationType | null;
-  price_group_id: number | null;
 }
 
 export interface ClientCreateInput {
@@ -79,7 +78,6 @@ export interface ClientCreateInput {
   company_name?: string | null;
   contact_name?: string | null;
   cooperation_type?: CooperationType | null;
-  price_group_id?: number | null;
 }
 
 export interface ClientProfileUpdateInput {
@@ -87,27 +85,10 @@ export interface ClientProfileUpdateInput {
   company_name?: string | null;
   contact_name?: string | null;
   cooperation_type?: CooperationType | null;
-  price_group_id?: number | null;
 }
 
 export interface PasswordResetInput {
   password: string;
-}
-
-export interface PriceGroup {
-  id: number;
-  name: string;
-  discount_percent: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface GroupPrice {
-  price_group_id: number;
-  product_id: number;
-  price: string;
-  product_name: string;
-  product_sku: string;
 }
 
 export interface UserPrice {
@@ -116,6 +97,15 @@ export interface UserPrice {
   price: string;
   product_name: string;
   product_sku: string;
+}
+
+export interface UserPriceListItem {
+  product_id: number;
+  product_sku: string;
+  product_name: string;
+  base_price: string;
+  price: string;
+  is_custom: boolean;
 }
 
 export interface TokenPair {

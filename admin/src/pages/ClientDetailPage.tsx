@@ -12,9 +12,7 @@ import {
   type OrderListItem,
   type OrderOut,
   type OrderStatus,
-  type PriceGroup,
-  type ProductAdmin,
-  type UserPrice,
+  type UserPriceListItem,
   type UserProfile,
 } from "../api/types";
 import { BarChart } from "../components/BarChart";
@@ -25,7 +23,17 @@ interface ProfileFormState {
   company_name: string;
   contact_name: string;
   cooperation_type: CooperationType | "";
-  price_group_id: string;
+}
+
+function cooperationBadgeClass(type: CooperationType): string {
+  switch (type) {
+    case "buyout":
+      return "badge--ok";
+    case "consignment":
+      return "badge--warn";
+    default:
+      return "badge--info";
+  }
 }
 
 function statusBadgeClass(status: OrderStatus): string {
@@ -51,7 +59,6 @@ export function ClientDetailPage() {
   const userId = Number(id);
 
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [priceGroups, setPriceGroups] = useState<PriceGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,7 +67,6 @@ export function ClientDetailPage() {
     company_name: "",
     contact_name: "",
     cooperation_type: "",
-    price_group_id: "",
   });
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
@@ -82,7 +88,6 @@ export function ClientDetailPage() {
           company_name: u.company_name ?? "",
           contact_name: u.contact_name ?? "",
           cooperation_type: u.cooperation_type ?? "",
-          price_group_id: u.price_group_id ? String(u.price_group_id) : "",
         });
       })
       .catch((e) => setError(e instanceof ApiError ? e.message : "Не удалось загрузить клиента"))
@@ -90,9 +95,6 @@ export function ClientDetailPage() {
   }
 
   useEffect(loadUser, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    api.get<PriceGroup[]>("/admin/price-groups").then(setPriceGroups).catch(() => {});
-  }, []);
 
   async function handleProfileSubmit(e: FormEvent) {
     e.preventDefault();
@@ -105,7 +107,6 @@ export function ClientDetailPage() {
         company_name: profileForm.company_name || null,
         contact_name: profileForm.contact_name || null,
         cooperation_type: profileForm.cooperation_type || null,
-        price_group_id: profileForm.price_group_id ? Number(profileForm.price_group_id) : null,
       };
       const updated = await api.patch<UserProfile>(`/admin/users/${userId}/profile`, body);
       setUser(updated);
@@ -174,6 +175,11 @@ export function ClientDetailPage() {
             <span className={`badge ${user.is_active ? "badge--ok" : "badge--danger"}`} style={{ marginLeft: 6 }}>
               {user.is_active ? "Активен" : "Заблокирован"}
             </span>
+            {user.cooperation_type && (
+              <span className={`badge ${cooperationBadgeClass(user.cooperation_type)}`} style={{ marginLeft: 6 }}>
+                {COOPERATION_LABELS[user.cooperation_type]}
+              </span>
+            )}
           </div>
         </div>
         <button className={`btn ${user.is_active ? "btn--danger" : ""}`} onClick={toggleActive}>
@@ -210,38 +216,22 @@ export function ClientDetailPage() {
                 />
               </label>
             </div>
-            <div className="form-row">
-              <label className="form-field">
-                Тип сотрудничества
-                <select
-                  value={profileForm.cooperation_type}
-                  onChange={(e) =>
-                    setProfileForm({ ...profileForm, cooperation_type: e.target.value as CooperationType | "" })
-                  }
-                >
-                  <option value="">Не указан</option>
-                  {Object.entries(COOPERATION_LABELS).map(([k, label]) => (
-                    <option key={k} value={k}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="form-field">
-                Ценовая группа
-                <select
-                  value={profileForm.price_group_id}
-                  onChange={(e) => setProfileForm({ ...profileForm, price_group_id: e.target.value })}
-                >
-                  <option value="">Без группы</option>
-                  {priceGroups.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
+            <label className="form-field">
+              Тип сотрудничества
+              <select
+                value={profileForm.cooperation_type}
+                onChange={(e) =>
+                  setProfileForm({ ...profileForm, cooperation_type: e.target.value as CooperationType | "" })
+                }
+              >
+                <option value="">Не указан</option>
+                {Object.entries(COOPERATION_LABELS).map(([k, label]) => (
+                  <option key={k} value={k}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
             {profileError && <p className="form-error">{profileError}</p>}
             {profileSaved && !profileError && (
@@ -285,10 +275,9 @@ export function ClientDetailPage() {
         <ClientStatsAndChart userId={userId} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 32 }}>
-        <ClientFavoriteProducts userId={userId} />
-        <ClientPrices userId={userId} />
-      </div>
+      <ClientFavoriteProducts userId={userId} />
+
+      <ClientPrices userId={userId} cooperationType={user.cooperation_type} />
 
       <ClientOrderHistory userId={userId} />
     </div>
@@ -369,7 +358,7 @@ function ClientFavoriteProducts({ userId }: { userId: number }) {
   }, [userId]);
 
   return (
-    <section>
+    <section style={{ marginBottom: 32 }}>
       <h2 style={{ fontSize: 15, marginBottom: 12 }}>Любимые товары</h2>
       <div className="table-wrap">
         {isLoading ? (
@@ -393,26 +382,28 @@ function ClientFavoriteProducts({ userId }: { userId: number }) {
   );
 }
 
-function ClientPrices({ userId }: { userId: number }) {
-  const [prices, setPrices] = useState<UserPrice[]>([]);
-  const [products, setProducts] = useState<ProductAdmin[]>([]);
+function ClientPrices({
+  userId,
+  cooperationType,
+}: {
+  userId: number;
+  cooperationType: CooperationType | null;
+}) {
+  const [items, setItems] = useState<UserPriceListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const [productId, setProductId] = useState("");
-  const [price, setPrice] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [drafts, setDrafts] = useState<Record<number, string>>({});
+  const [rowBusy, setRowBusy] = useState<Record<number, boolean>>({});
+  const [rowError, setRowError] = useState<Record<number, string>>({});
 
   function load() {
     setIsLoading(true);
-    Promise.all([
-      api.get<UserPrice[]>(`/admin/users/${userId}/prices`),
-      api.get<ProductAdmin[]>("/admin/products?limit=200"),
-    ])
-      .then(([p, prod]) => {
-        setPrices(p);
-        setProducts(prod);
+    api
+      .get<UserPriceListItem[]>(`/admin/users/${userId}/price-list`)
+      .then((data) => {
+        setItems(data);
+        setDrafts(Object.fromEntries(data.map((i) => [i.product_id, i.price])));
       })
       .catch((e) => setError(e instanceof ApiError ? e.message : "Не удалось загрузить цены"))
       .finally(() => setIsLoading(false));
@@ -420,99 +411,139 @@ function ClientPrices({ userId }: { userId: number }) {
 
   useEffect(load, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function handleAdd(e: FormEvent) {
-    e.preventDefault();
-    if (!productId || !price) {
-      setFormError("Выберите товар и укажите цену");
-      return;
-    }
-    setSubmitting(true);
-    setFormError(null);
+  async function handleSave(item: UserPriceListItem) {
+    const value = drafts[item.product_id];
+    if (!value) return;
+    setRowBusy((prev) => ({ ...prev, [item.product_id]: true }));
+    setRowError((prev) => ({ ...prev, [item.product_id]: "" }));
     try {
-      await api.put(`/admin/users/${userId}/prices/${productId}`, { price });
-      setProductId("");
-      setPrice("");
+      await api.put(`/admin/users/${userId}/prices/${item.product_id}`, { price: value });
       load();
     } catch (e) {
-      setFormError(e instanceof ApiError ? e.message : "Не удалось сохранить цену");
-    } finally {
-      setSubmitting(false);
+      setRowError((prev) => ({
+        ...prev,
+        [item.product_id]: e instanceof ApiError ? e.message : "Не удалось сохранить цену",
+      }));
+      setRowBusy((prev) => ({ ...prev, [item.product_id]: false }));
     }
   }
 
-  async function handleRemove(pid: number) {
+  async function handleReset(item: UserPriceListItem) {
+    setRowBusy((prev) => ({ ...prev, [item.product_id]: true }));
     try {
-      await api.delete(`/admin/users/${userId}/prices/${pid}`);
+      await api.delete(`/admin/users/${userId}/prices/${item.product_id}`);
       load();
     } catch (e) {
-      alert(e instanceof ApiError ? e.message : "Не удалось удалить цену");
+      alert(e instanceof ApiError ? e.message : "Не удалось сбросить цену");
+      setRowBusy((prev) => ({ ...prev, [item.product_id]: false }));
     }
   }
 
-  const availableProducts = products.filter((p) => !prices.some((pr) => pr.product_id === p.id));
+  const q = search.trim().toLowerCase();
+  const filtered = q
+    ? items.filter(
+        (i) => i.product_name.toLowerCase().includes(q) || i.product_sku.toLowerCase().includes(q),
+      )
+    : items;
+  const missingCount = items.filter((i) => !i.is_custom).length;
+  const isConsignment = cooperationType === "consignment";
 
   return (
-    <section>
-      <h2 style={{ fontSize: 15, marginBottom: 12 }}>Индивидуальные цены</h2>
-      {isLoading ? (
-        <div className="table-loading">Загрузка...</div>
-      ) : error ? (
-        <div className="table-error">{error}</div>
-      ) : (
-        <>
-          <div className="table-wrap" style={{ marginBottom: 14 }}>
-            {prices.length === 0 ? (
-              <div className="table-empty">Индивидуальных цен нет</div>
-            ) : (
-              <table className="data-table">
-                <tbody>
-                  {prices.map((p) => (
-                    <tr key={p.product_id}>
-                      <td>{p.product_name}</td>
-                      <td style={{ fontWeight: 600 }}>{formatPrice(p.price)}</td>
-                      <td style={{ textAlign: "right" }}>
-                        <button className="btn btn--danger btn--sm" onClick={() => handleRemove(p.product_id)}>
-                          Удалить
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+    <section style={{ marginBottom: 32 }}>
+      <h2 style={{ fontSize: 15, marginBottom: 12 }}>Цены клиента</h2>
 
-          <form onSubmit={handleAdd} className="form-row" style={{ alignItems: "flex-end" }}>
-            <label className="form-field">
-              Товар
-              <select value={productId} onChange={(e) => setProductId(e.target.value)}>
-                <option value="" disabled>
-                  Выберите товар
-                </option>
-                {availableProducts.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.sku})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="form-field">
-              Цена, ₽
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-              />
-            </label>
-            <button type="submit" className="btn" disabled={submitting} style={{ marginBottom: 16 }}>
-              Добавить
-            </button>
-          </form>
-          {formError && <p className="form-error">{formError}</p>}
-        </>
+      {isConsignment && missingCount > 0 && (
+        <p className="form-hint" style={{ marginTop: 0, color: "#9c6a10" }}>
+          Не задано индивидуальных цен: {missingCount} из {items.length} — по этим товарам клиент
+          увидит базовую цену, если ничего не изменить.
+        </p>
       )}
+
+      <input
+        type="search"
+        placeholder="Поиск по названию или артикулу"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{ marginBottom: 12, width: "100%", maxWidth: 360 }}
+      />
+
+      <div className="table-wrap">
+        {isLoading ? (
+          <div className="table-loading">Загрузка...</div>
+        ) : error ? (
+          <div className="table-error">{error}</div>
+        ) : filtered.length === 0 ? (
+          <div className="table-empty">Товары не найдены</div>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Товар</th>
+                <th>Базовая цена</th>
+                <th>Цена клиента</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((item) => (
+                <tr
+                  key={item.product_id}
+                  style={isConsignment && !item.is_custom ? { background: "var(--color-bg-muted)" } : undefined}
+                >
+                  <td>
+                    {item.product_name}{" "}
+                    <span style={{ color: "var(--color-text-muted)" }}>({item.product_sku})</span>
+                  </td>
+                  <td>{formatPrice(item.base_price)}</td>
+                  <td>
+                    <input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      value={drafts[item.product_id] ?? ""}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({ ...prev, [item.product_id]: e.target.value }))
+                      }
+                      style={{ width: 100 }}
+                    />
+                    {item.is_custom && (
+                      <span className="badge badge--info" style={{ marginLeft: 8 }}>
+                        индивидуальная
+                      </span>
+                    )}
+                    {rowError[item.product_id] && (
+                      <p className="form-error" style={{ margin: "4px 0 0" }}>
+                        {rowError[item.product_id]}
+                      </p>
+                    )}
+                  </td>
+                  <td style={{ whiteSpace: "nowrap" }}>
+                    <button
+                      type="button"
+                      className="btn btn--sm"
+                      disabled={rowBusy[item.product_id]}
+                      onClick={() => handleSave(item)}
+                    >
+                      Сохранить
+                    </button>
+                    {item.is_custom && (
+                      <button
+                        type="button"
+                        className="btn btn--outline btn--sm"
+                        style={{ marginLeft: 6 }}
+                        disabled={rowBusy[item.product_id]}
+                        onClick={() => handleReset(item)}
+                      >
+                        Сбросить
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </section>
   );
 }
