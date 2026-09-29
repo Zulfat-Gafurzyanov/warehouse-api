@@ -15,6 +15,7 @@ import { ActionsMenu } from "../components/ActionsMenu";
 import { BarChart } from "../components/BarChart";
 import { Modal } from "../components/Modal";
 import { formatDateTime, formatPrice } from "../utils/format";
+import { generateSkuFromName } from "../utils/sku";
 
 interface FormState {
   sku: string;
@@ -323,11 +324,22 @@ export function ProductsPage() {
             <div className="form-row">
               <label className="form-field">
                 Артикул
-                <input
-                  value={form.sku}
-                  onChange={(e) => setForm({ ...form, sku: e.target.value })}
-                  required
-                />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    value={form.sku}
+                    onChange={(e) => setForm({ ...form, sku: e.target.value })}
+                    required
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn--outline btn--sm"
+                    onClick={() => setForm((f) => ({ ...f, sku: generateSkuFromName(f.name) }))}
+                    title="Сгенерировать из названия"
+                  >
+                    Сгенерировать
+                  </button>
+                </div>
               </label>
               <label className="form-field">
                 Категория
