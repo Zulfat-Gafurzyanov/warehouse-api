@@ -10,9 +10,8 @@ class UserRole(str, Enum):
 
 
 class CooperationType(str, Enum):
-    BUYOUT = "buyout"          # выкуп
+    BUYOUT = "buyout"            # выкуп
     CONSIGNMENT = "consignment"  # реализация
-    CUSTOM = "custom"          # индивидуальные условия
 
 
 class UserProfile(BaseModel):

@@ -12,7 +12,6 @@ import {
   type OrderListItem,
   type OrderOut,
   type OrderStatus,
-  type UserPriceListItem,
   type UserProfile,
 } from "../api/types";
 import { BarChart } from "../components/BarChart";
@@ -26,14 +25,7 @@ interface ProfileFormState {
 }
 
 function cooperationBadgeClass(type: CooperationType): string {
-  switch (type) {
-    case "buyout":
-      return "badge--ok";
-    case "consignment":
-      return "badge--warn";
-    default:
-      return "badge--info";
-  }
+  return type === "buyout" ? "badge--ok" : "badge--warn";
 }
 
 function statusBadgeClass(status: OrderStatus): string {
@@ -270,14 +262,18 @@ export function ClientDetailPage() {
               Новый пароль сохранён — сообщите его клиенту.
             </p>
           )}
+
+          <hr style={{ margin: "20px 0", border: "none", borderTop: "1px solid var(--color-border)" }} />
+
+          <Link to={`/clients/${userId}/prices`} className="btn btn--outline">
+            Цены клиента →
+          </Link>
         </section>
 
         <ClientStatsAndChart userId={userId} />
       </div>
 
       <ClientFavoriteProducts userId={userId} />
-
-      <ClientPrices userId={userId} cooperationType={user.cooperation_type} />
 
       <ClientOrderHistory userId={userId} />
     </div>
@@ -372,172 +368,6 @@ function ClientFavoriteProducts({ userId }: { userId: number }) {
                 <tr key={p.product_id}>
                   <td>{p.name}</td>
                   <td style={{ textAlign: "right", fontWeight: 600 }}>{p.quantity} шт</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function ClientPrices({
-  userId,
-  cooperationType,
-}: {
-  userId: number;
-  cooperationType: CooperationType | null;
-}) {
-  const [items, setItems] = useState<UserPriceListItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [drafts, setDrafts] = useState<Record<number, string>>({});
-  const [rowBusy, setRowBusy] = useState<Record<number, boolean>>({});
-  const [rowError, setRowError] = useState<Record<number, string>>({});
-
-  function load() {
-    setIsLoading(true);
-    api
-      .get<UserPriceListItem[]>(`/admin/users/${userId}/price-list`)
-      .then((data) => {
-        setItems(data);
-        setDrafts(Object.fromEntries(data.map((i) => [i.product_id, i.price])));
-      })
-      .catch((e) => setError(e instanceof ApiError ? e.message : "Не удалось загрузить цены"))
-      .finally(() => setIsLoading(false));
-  }
-
-  useEffect(load, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function handleSave(item: UserPriceListItem) {
-    const value = drafts[item.product_id];
-    if (!value) return;
-    setRowBusy((prev) => ({ ...prev, [item.product_id]: true }));
-    setRowError((prev) => ({ ...prev, [item.product_id]: "" }));
-    try {
-      await api.put(`/admin/users/${userId}/prices/${item.product_id}`, { price: value });
-      load();
-    } catch (e) {
-      setRowError((prev) => ({
-        ...prev,
-        [item.product_id]: e instanceof ApiError ? e.message : "Не удалось сохранить цену",
-      }));
-      setRowBusy((prev) => ({ ...prev, [item.product_id]: false }));
-    }
-  }
-
-  async function handleReset(item: UserPriceListItem) {
-    setRowBusy((prev) => ({ ...prev, [item.product_id]: true }));
-    try {
-      await api.delete(`/admin/users/${userId}/prices/${item.product_id}`);
-      load();
-    } catch (e) {
-      alert(e instanceof ApiError ? e.message : "Не удалось сбросить цену");
-      setRowBusy((prev) => ({ ...prev, [item.product_id]: false }));
-    }
-  }
-
-  const q = search.trim().toLowerCase();
-  const filtered = q
-    ? items.filter(
-        (i) => i.product_name.toLowerCase().includes(q) || i.product_sku.toLowerCase().includes(q),
-      )
-    : items;
-  const missingCount = items.filter((i) => !i.is_custom).length;
-  const isConsignment = cooperationType === "consignment";
-
-  return (
-    <section style={{ marginBottom: 32 }}>
-      <h2 style={{ fontSize: 15, marginBottom: 12 }}>Цены клиента</h2>
-
-      {isConsignment && missingCount > 0 && (
-        <p className="form-hint" style={{ marginTop: 0, color: "#9c6a10" }}>
-          Не задано индивидуальных цен: {missingCount} из {items.length} — по этим товарам клиент
-          увидит базовую цену, если ничего не изменить.
-        </p>
-      )}
-
-      <input
-        type="search"
-        placeholder="Поиск по названию или артикулу"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        style={{ marginBottom: 12, width: "100%", maxWidth: 360 }}
-      />
-
-      <div className="table-wrap">
-        {isLoading ? (
-          <div className="table-loading">Загрузка...</div>
-        ) : error ? (
-          <div className="table-error">{error}</div>
-        ) : filtered.length === 0 ? (
-          <div className="table-empty">Товары не найдены</div>
-        ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Товар</th>
-                <th>Базовая цена</th>
-                <th>Цена клиента</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((item) => (
-                <tr
-                  key={item.product_id}
-                  style={isConsignment && !item.is_custom ? { background: "var(--color-bg-muted)" } : undefined}
-                >
-                  <td>
-                    {item.product_name}{" "}
-                    <span style={{ color: "var(--color-text-muted)" }}>({item.product_sku})</span>
-                  </td>
-                  <td>{formatPrice(item.base_price)}</td>
-                  <td>
-                    <input
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      value={drafts[item.product_id] ?? ""}
-                      onChange={(e) =>
-                        setDrafts((prev) => ({ ...prev, [item.product_id]: e.target.value }))
-                      }
-                      style={{ width: 100 }}
-                    />
-                    {item.is_custom && (
-                      <span className="badge badge--info" style={{ marginLeft: 8 }}>
-                        индивидуальная
-                      </span>
-                    )}
-                    {rowError[item.product_id] && (
-                      <p className="form-error" style={{ margin: "4px 0 0" }}>
-                        {rowError[item.product_id]}
-                      </p>
-                    )}
-                  </td>
-                  <td style={{ whiteSpace: "nowrap" }}>
-                    <button
-                      type="button"
-                      className="btn btn--sm"
-                      disabled={rowBusy[item.product_id]}
-                      onClick={() => handleSave(item)}
-                    >
-                      Сохранить
-                    </button>
-                    {item.is_custom && (
-                      <button
-                        type="button"
-                        className="btn btn--outline btn--sm"
-                        style={{ marginLeft: 6 }}
-                        disabled={rowBusy[item.product_id]}
-                        onClick={() => handleReset(item)}
-                      >
-                        Сбросить
-                      </button>
-                    )}
-                  </td>
                 </tr>
               ))}
             </tbody>

@@ -34,7 +34,12 @@ class UserPriceRepository:
         return await self.conn.fetch(
             """
             SELECT p.id AS product_id, p.sku AS product_sku, p.name AS product_name,
-                   p.base_price, COALESCE(up.price, p.base_price) AS price,
+                   (
+                       SELECT pi.url FROM product_image pi
+                       WHERE pi.product_id = p.id
+                       ORDER BY pi.sort_order LIMIT 1
+                   ) AS image_url,
+                   p.stock, p.base_price, COALESCE(up.price, p.base_price) AS price,
                    (up.price IS NOT NULL) AS is_custom
             FROM product p
             LEFT JOIN user_price up ON up.product_id = p.id AND up.user_id = $1

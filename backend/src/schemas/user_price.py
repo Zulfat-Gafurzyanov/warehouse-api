@@ -22,6 +22,8 @@ class UserPriceListItem(BaseModel):
     product_id: int
     product_sku: str
     product_name: str
+    image_url: str | None
+    stock: int
     base_price: Decimal
     price: Decimal
     is_custom: bool

@@ -53,12 +53,11 @@ export interface ProductUpdateInput {
 }
 
 export type UserRole = "user" | "admin";
-export type CooperationType = "buyout" | "consignment" | "custom";
+export type CooperationType = "buyout" | "consignment";
 
 export const COOPERATION_LABELS: Record<CooperationType, string> = {
   buyout: "Выкуп",
   consignment: "Реализация",
-  custom: "Индивидуальные условия",
 };
 
 export interface UserProfile {
@@ -103,6 +102,8 @@ export interface UserPriceListItem {
   product_id: number;
   product_sku: string;
   product_name: string;
+  image_url: string | null;
+  stock: number;
   base_price: string;
   price: string;
   is_custom: boolean;
