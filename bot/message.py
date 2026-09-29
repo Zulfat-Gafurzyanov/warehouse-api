@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from schemas import OrderNotification
+from schemas import OrderNotification, StockRequestNotification
 
 
 def _format_money(value: Decimal) -> str:
@@ -36,3 +36,11 @@ def build_order_message(order: OrderNotification, admin_panel_url: str) -> str:
         lines.append(f"Открыть заказ в CRM: {admin_panel_url.rstrip('/')}/orders/{order.order_id}")
 
     return "\n".join(lines)
+
+
+def build_stock_request_message(request: StockRequestNotification) -> str:
+    return (
+        "Товара нет в наличии, но клиент хочет заказать\n"
+        f"Товар: {request.product_name} ({request.product_sku})\n"
+        f"Клиент: {request.client_label}"
+    )

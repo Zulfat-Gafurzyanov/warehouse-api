@@ -5,8 +5,8 @@ import httpx
 from fastapi import FastAPI, Header, HTTPException, status
 
 from config import settings
-from message import build_order_message
-from schemas import OrderNotification
+from message import build_order_message, build_stock_request_message
+from schemas import OrderNotification, StockRequestNotification
 from telegram_client import TelegramClient
 
 logging.basicConfig(level=logging.INFO)
@@ -39,6 +39,23 @@ async def notify_order(
         await telegram_client.send_message(text)
     except httpx.HTTPError as e:
         logger.exception("Failed to deliver Telegram message for order %s", body.order_id)
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Failed to deliver notification") from e
+
+    return {"sent": telegram_client.is_configured}
+
+
+@app.post("/notify/stock-request", status_code=status.HTTP_202_ACCEPTED)
+async def notify_stock_request(
+    body: StockRequestNotification,
+    x_internal_token: Annotated[str | None, Header()] = None,
+) -> dict:
+    _check_internal_token(x_internal_token)
+
+    text = build_stock_request_message(body)
+    try:
+        await telegram_client.send_message(text)
+    except httpx.HTTPError as e:
+        logger.exception("Failed to deliver Telegram message for stock request %s", body.product_sku)
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Failed to deliver notification") from e
 
     return {"sent": telegram_client.is_configured}

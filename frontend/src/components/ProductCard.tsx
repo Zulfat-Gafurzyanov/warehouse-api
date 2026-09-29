@@ -1,7 +1,9 @@
 import { useState, type MouseEvent } from "react";
 import { Link } from "react-router-dom";
+import { api, ApiError } from "../api/client";
 import type { ProductListItem } from "../api/types";
 import { useCart } from "../context/CartContext";
+import { useToast } from "../context/ToastContext";
 import { formatPrice } from "../utils/format";
 import "./ProductCard.css";
 
@@ -20,7 +22,10 @@ export function ProductCard({
 }: ProductCardProps) {
   const outOfStock = product.stock <= 0;
   const { items, setQuantity: setCartQuantity, openCart } = useCart();
+  const { show } = useToast();
   const cartItem = items.find((i) => i.productId === product.id);
+  const [stockRequested, setStockRequested] = useState(false);
+  const [requestingStock, setRequestingStock] = useState(false);
 
   // Пока товара нет в корзине — это просто «сколько добавить» при клике по кнопке.
   // Как только товар в корзине, количество на карточке становится живым отражением
@@ -40,6 +45,22 @@ export function ProductCard({
       setCartQuantity(product.id, clamped);
     } else {
       setPendingQty(clamped);
+    }
+  }
+
+  async function handleStockRequestClick(e: MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (requestingStock || stockRequested) return;
+    setRequestingStock(true);
+    try {
+      await api.post(`/products/${product.id}/stock-request`);
+      setStockRequested(true);
+      show("Заявка отправлена — менеджер свяжется с вами");
+    } catch (err) {
+      show(err instanceof ApiError ? err.message : "Не удалось отправить заявку");
+    } finally {
+      setRequestingStock(false);
     }
   }
 
@@ -140,8 +161,12 @@ export function ProductCard({
       )}
 
       {outOfStock && (
-        <button className="btn product-card__btn" disabled>
-          Нет в наличии
+        <button
+          className="btn product-card__btn"
+          onClick={handleStockRequestClick}
+          disabled={requestingStock || stockRequested}
+        >
+          {stockRequested ? "Заявка отправлена ✓" : "Заказать товар"}
         </button>
       )}
     </div>

@@ -49,3 +49,24 @@ class NotificationClient:
                 response.raise_for_status()
         except httpx.HTTPError:
             logger.exception("Failed to notify bot service about order %s", order.id)
+
+    async def notify_stock_request(self, product_name: str, product_sku: str, client_label: str) -> None:
+        if not self.is_configured:
+            logger.info("Stock request notification skipped for %s: bot service not configured", product_sku)
+            return
+
+        payload = {
+            "product_name": product_name,
+            "product_sku": product_sku,
+            "client_label": client_label,
+        }
+        headers = {"X-Internal-Token": self.internal_token} if self.internal_token else {}
+
+        try:
+            async with httpx.AsyncClient(timeout=10) as http_client:
+                response = await http_client.post(
+                    f"{self.base_url}/notify/stock-request", json=payload, headers=headers
+                )
+                response.raise_for_status()
+        except httpx.HTTPError:
+            logger.exception("Failed to notify bot service about stock request for %s", product_sku)

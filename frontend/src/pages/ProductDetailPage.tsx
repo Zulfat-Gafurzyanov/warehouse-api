@@ -20,12 +20,15 @@ export function ProductDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeImage, setActiveImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [stockRequested, setStockRequested] = useState(false);
+  const [requestingStock, setRequestingStock] = useState(false);
 
   useEffect(() => {
     setIsLoading(true);
     setError(null);
     setActiveImage(0);
     setQuantity(1);
+    setStockRequested(false);
 
     api
       .get<ProductDetail>(`/products/${id}`)
@@ -64,6 +67,20 @@ export function ProductDetailPage() {
       quantity,
     );
     show(`«${product.name}» добавлено в корзину`);
+  }
+
+  async function handleStockRequest() {
+    if (!product || requestingStock || stockRequested) return;
+    setRequestingStock(true);
+    try {
+      await api.post(`/products/${product.id}/stock-request`);
+      setStockRequested(true);
+      show("Заявка отправлена — менеджер свяжется с вами");
+    } catch (e) {
+      show(e instanceof ApiError ? e.message : "Не удалось отправить заявку");
+    } finally {
+      setRequestingStock(false);
+    }
   }
 
   return (
@@ -140,9 +157,19 @@ export function ProductDetailPage() {
           )}
 
           <div className="product-detail__actions">
-            <button className="btn product-detail__add" disabled={outOfStock} onClick={handleAddToCart}>
-              {outOfStock ? "Нет в наличии" : "Добавить в корзину"}
-            </button>
+            {outOfStock ? (
+              <button
+                className="btn product-detail__add"
+                onClick={handleStockRequest}
+                disabled={requestingStock || stockRequested}
+              >
+                {stockRequested ? "Заявка отправлена ✓" : "Заказать товар"}
+              </button>
+            ) : (
+              <button className="btn product-detail__add" onClick={handleAddToCart}>
+                Добавить в корзину
+              </button>
+            )}
             <button
               className={`btn btn--outline product-detail__favorite ${favorite ? "product-detail__favorite--active" : ""}`}
               onClick={() => toggle(product)}

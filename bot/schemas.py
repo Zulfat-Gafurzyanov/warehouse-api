@@ -17,3 +17,9 @@ class OrderNotification(BaseModel):
     comment: str | None = None
     total_amount: Decimal
     items: list[OrderItemNotification]
+
+
+class StockRequestNotification(BaseModel):
+    product_name: str
+    product_sku: str
+    client_label: str
