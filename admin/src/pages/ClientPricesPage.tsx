@@ -18,6 +18,15 @@ function cooperationBadgeClass(type: CooperationType): string {
 // это <input type="text">, а не type="number", чтобы браузер не «съедал» конечные нули.
 const DECIMAL_INPUT_RE = /^[0-9]*[.,]?[0-9]{0,2}$/;
 
+function formatDelta(basePrice: string, draft: string): string | null {
+  const base = Number(basePrice);
+  const current = Number(draft.replace(",", "."));
+  if (draft.trim() === "" || Number.isNaN(current) || Number.isNaN(base)) return null;
+  const diff = current - base;
+  if (diff === 0) return null;
+  return `${diff > 0 ? "+" : "−"}${formatPrice(Math.abs(diff))}`;
+}
+
 export function ClientPricesPage() {
   const { id } = useParams<{ id: string }>();
   const userId = Number(id);
@@ -162,7 +171,9 @@ export function ClientPricesPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((item) => (
+              {filtered.map((item) => {
+                const delta = formatDelta(item.base_price, drafts[item.product_id] ?? "");
+                return (
                 <tr
                   key={item.product_id}
                   style={isConsignment && !item.is_custom ? { background: "var(--color-bg-muted)" } : undefined}
@@ -193,6 +204,11 @@ export function ClientPricesPage() {
                       onChange={(e) => updateDraft(item.product_id, e.target.value)}
                       style={{ width: 100 }}
                     />
+                    {delta && (
+                      <span style={{ marginLeft: 8, fontSize: 12, color: "var(--color-text-muted)" }}>
+                        {delta}
+                      </span>
+                    )}
                     {item.is_custom && (
                       <span className="badge badge--info" style={{ marginLeft: 8 }}>
                         индивидуальная
@@ -226,7 +242,8 @@ export function ClientPricesPage() {
                     )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         )}
