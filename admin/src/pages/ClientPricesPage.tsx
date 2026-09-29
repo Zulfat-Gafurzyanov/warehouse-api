@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { api, ApiError } from "../api/client";
+import { api, ApiError, resolveImageUrl } from "../api/client";
 import {
   COOPERATION_LABELS,
   type CooperationType,
@@ -181,7 +181,7 @@ export function ClientPricesPage() {
                   <td>
                     {item.image_url ? (
                       <img
-                        src={item.image_url}
+                        src={resolveImageUrl(item.image_url)}
                         alt=""
                         className="receipt-line-thumb"
                         onClick={() => setZoomedImage(item.image_url)}
@@ -251,7 +251,7 @@ export function ClientPricesPage() {
 
       {zoomedImage && (
         <Modal title="Фото товара" onClose={() => setZoomedImage(null)}>
-          <img src={zoomedImage} alt="" style={{ width: "100%", borderRadius: "var(--radius-md)" }} />
+          <img src={resolveImageUrl(zoomedImage)} alt="" style={{ width: "100%", borderRadius: "var(--radius-md)" }} />
         </Modal>
       )}
     </div>

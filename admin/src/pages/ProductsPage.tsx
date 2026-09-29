@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
-import { api, ApiError, uploadImages } from "../api/client";
+import { api, ApiError, resolveImageUrl, uploadImages } from "../api/client";
 import type {
   Category,
   MonthlyPoint,
@@ -410,7 +410,7 @@ export function ProductsPage() {
                 <div className="product-photo-gallery">
                   {form.image_urls.map((url, i) => (
                     <div key={`${url}-${i}`} className="product-photo-gallery__item">
-                      <img src={url} alt="" />
+                      <img src={resolveImageUrl(url)} alt="" />
                       {i === 0 && (
                         <span className="product-photo-gallery__badge">Основное</span>
                       )}

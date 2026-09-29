@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, ApiError } from "../api/client";
+import { api, ApiError, resolveImageUrl } from "../api/client";
 import type { OrderOut, ProductListItem, UserProfile } from "../api/types";
 import { useCart } from "../context/CartContext";
 import { useToast } from "../context/ToastContext";
@@ -112,7 +112,7 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
               {items.map((item) => (
                 <div key={item.productId} className="cart-drawer__item">
                   {item.imageUrl ? (
-                    <img src={item.imageUrl} alt={item.name} className="cart-drawer__item-image" />
+                    <img src={resolveImageUrl(item.imageUrl)} alt={item.name} className="cart-drawer__item-image" />
                   ) : (
                     <div className="cart-drawer__item-image cart-drawer__item-image--placeholder" />
                   )}
@@ -183,7 +183,7 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
                   {visibleRecommendations.map((p) => (
                     <div key={p.id} className="cart-drawer__rec-card">
                       {p.image_url ? (
-                        <img src={p.image_url} alt={p.name} className="cart-drawer__rec-image" />
+                        <img src={resolveImageUrl(p.image_url)} alt={p.name} className="cart-drawer__rec-image" />
                       ) : (
                         <div className="cart-drawer__rec-image cart-drawer__rec-image--placeholder" />
                       )}

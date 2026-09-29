@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type KeyboardEvent } from "react";
-import { api, ApiError } from "../api/client";
+import { api, ApiError, resolveImageUrl } from "../api/client";
 import type { ProductAdmin, ReceiptListItem, ReceiptOut } from "../api/types";
 import { Modal } from "../components/Modal";
 import { formatDateTime, formatPrice } from "../utils/format";
@@ -239,7 +239,7 @@ export function ReceiptsPage() {
                       <td>
                         {line.imageUrl ? (
                           <img
-                            src={line.imageUrl}
+                            src={resolveImageUrl(line.imageUrl)}
                             alt=""
                             className="receipt-line-thumb"
                             onClick={() => setZoomedImage(line.imageUrl)}
@@ -312,7 +312,7 @@ export function ReceiptsPage() {
 
       {zoomedImage && (
         <Modal title="Фото товара" onClose={() => setZoomedImage(null)}>
-          <img src={zoomedImage} alt="" style={{ width: "100%", borderRadius: "var(--radius-md)" }} />
+          <img src={resolveImageUrl(zoomedImage)} alt="" style={{ width: "100%", borderRadius: "var(--radius-md)" }} />
         </Modal>
       )}
 

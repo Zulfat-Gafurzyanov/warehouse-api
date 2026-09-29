@@ -1,4 +1,11 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
+const API_ORIGIN = new URL(API_BASE_URL, window.location.origin).origin;
+
+/** Фото отдаются backend'ом по относительному пути (/uploads/...), чтобы база не
+ *  зависела от адреса сервера при переносе. Внешние ссылки (вставленные вручную) не трогаем. */
+export function resolveImageUrl(url: string): string {
+  return /^https?:\/\//i.test(url) ? url : `${API_ORIGIN}${url}`;
+}
 
 export class ApiError extends Error {
   status: number;

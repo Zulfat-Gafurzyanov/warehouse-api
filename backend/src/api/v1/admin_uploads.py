@@ -1,7 +1,7 @@
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 
 from src.api.deps import get_current_admin
 from src.core.config import settings
@@ -22,11 +22,13 @@ _ALLOWED_TYPES = {
 
 @router.post("/uploads/images", status_code=status.HTTP_201_CREATED)
 async def upload_images(
-    request: Request,
     files: list[UploadFile] = File(...),
 ) -> list[str]:
     """Сохраняет фото на диск сервера и возвращает их публичные URL — те же строки,
-    что раньше вставлялись вручную в поле «Ссылки на фото»."""
+    что раньше вставлялись вручную в поле «Ссылки на фото».
+
+    URL относительный (без хоста) — иначе при переносе базы на другой сервер/домен
+    все фото ссылались бы на старый адрес. Хост подставляет фронтенд при отображении."""
     max_bytes = settings.UPLOAD_MAX_SIZE_MB * 1024 * 1024
     upload_dir = Path(settings.UPLOAD_DIR)
     upload_dir.mkdir(parents=True, exist_ok=True)
@@ -49,6 +51,6 @@ async def upload_images(
 
         filename = f"{uuid.uuid4().hex}{ext}"
         (upload_dir / filename).write_bytes(data)
-        urls.append(f"{request.base_url}uploads/{filename}")
+        urls.append(f"/uploads/{filename}")
 
     return urls

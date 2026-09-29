@@ -1,6 +1,6 @@
 import { useState, type MouseEvent } from "react";
 import { Link } from "react-router-dom";
-import { api, ApiError } from "../api/client";
+import { api, ApiError, resolveImageUrl } from "../api/client";
 import type { ProductListItem } from "../api/types";
 import { useCart } from "../context/CartContext";
 import { useToast } from "../context/ToastContext";
@@ -99,7 +99,7 @@ export function ProductCard({
           </button>
 
           {product.image_url ? (
-            <img className="product-card__image" src={product.image_url} alt={product.name} />
+            <img className="product-card__image" src={resolveImageUrl(product.image_url)} alt={product.name} />
           ) : (
             <div className="product-card__image product-card__image--placeholder" />
           )}

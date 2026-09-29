@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { api, ApiError } from "../api/client";
+import { api, ApiError, resolveImageUrl } from "../api/client";
 import type { ProductDetail } from "../api/types";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
@@ -94,7 +94,7 @@ export function ProductDetailPage() {
           <div className="product-detail__main-image">
             {product.is_new && <span className="product-detail__badge">Новинка</span>}
             {images[activeImage]?.url ? (
-              <img src={images[activeImage].url} alt={product.name} />
+              <img src={resolveImageUrl(images[activeImage].url)} alt={product.name} />
             ) : (
               <div className="product-detail__main-image--placeholder" />
             )}
@@ -108,7 +108,7 @@ export function ProductDetailPage() {
                   className={`product-detail__thumb ${i === activeImage ? "product-detail__thumb--active" : ""}`}
                   onClick={() => setActiveImage(i)}
                 >
-                  <img src={img.url} alt="" />
+                  <img src={resolveImageUrl(img.url)} alt="" />
                 </button>
               ))}
             </div>
