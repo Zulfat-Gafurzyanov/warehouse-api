@@ -9,7 +9,6 @@ import type {
   ProductCreateInput,
   ProductStats,
   ProductUpdateInput,
-  StockHistoryEntry,
 } from "../api/types";
 import { ActionsMenu } from "../components/ActionsMenu";
 import { BarChart } from "../components/BarChart";
@@ -22,9 +21,7 @@ interface FormState {
   name: string;
   category_id: string;
   description: string;
-  cost_price: string;
   base_price: string;
-  stock: string;
   is_new: boolean;
   is_active: boolean;
   // Первая ссылка — основное фото (то, что показывается на карточке в каталоге).
@@ -36,9 +33,7 @@ const EMPTY_FORM: FormState = {
   name: "",
   category_id: "",
   description: "",
-  cost_price: "0",
   base_price: "",
-  stock: "0",
   is_new: false,
   is_active: true,
   image_urls: [],
@@ -62,7 +57,7 @@ export function ProductsPage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [newPhotoUrl, setNewPhotoUrl] = useState("");
 
-  const [historyProduct, setHistoryProduct] = useState<ProductAdmin | null>(null);
+  const [statsProduct, setStatsProduct] = useState<ProductAdmin | null>(null);
 
   function load() {
     setIsLoading(true);
@@ -108,9 +103,7 @@ export function ProductsPage() {
       name: product.name,
       category_id: String(product.category_id),
       description: product.description ?? "",
-      cost_price: product.cost_price,
       base_price: product.base_price,
-      stock: String(product.stock),
       is_new: product.is_new,
       is_active: product.is_active,
       image_urls: product.images.map((i) => i.url),
@@ -171,23 +164,21 @@ export function ProductsPage() {
           name: form.name,
           category_id: Number(form.category_id),
           description: form.description || null,
-          cost_price: form.cost_price,
           base_price: form.base_price,
-          stock: Number(form.stock),
           is_new: form.is_new,
           is_active: form.is_active,
           image_urls,
         };
         await api.patch(`/admin/products/${editingProduct.id}`, body);
       } else {
+        // Остаток и себестоимость сюда не входят — новый товар всегда заводится с остатком
+        // 0, склад пополняется только через документ приёмки.
         const body: ProductCreateInput = {
           sku: form.sku,
           name: form.name,
           category_id: Number(form.category_id),
           description: form.description || null,
-          cost_price: form.cost_price,
           base_price: form.base_price,
-          stock: Number(form.stock),
           is_new: form.is_new,
           image_urls,
         };
@@ -225,8 +216,10 @@ export function ProductsPage() {
     <div>
       <div className="page-header">
         <div>
-          <h1>Склад</h1>
-          <div className="page-header__sub">{products.length} товаров</div>
+          <h1>Товары</h1>
+          <div className="page-header__sub">
+            {products.length} товаров — здесь только описание и цена, остатки смотрите на Складе
+          </div>
         </div>
         <button className="btn" onClick={openCreate}>
           + Новый товар
@@ -264,9 +257,7 @@ export function ProductsPage() {
                 <th>Товар</th>
                 <th>Артикул</th>
                 <th>Категория</th>
-                <th>Себестоимость</th>
                 <th>Базовая цена</th>
-                <th>Остаток</th>
                 <th>Статус</th>
                 <th></th>
               </tr>
@@ -280,9 +271,7 @@ export function ProductsPage() {
                   </td>
                   <td>{p.sku}</td>
                   <td>{categoryName(p.category_id)}</td>
-                  <td>{formatPrice(p.cost_price)}</td>
                   <td>{formatPrice(p.base_price)}</td>
-                  <td>{p.stock <= 5 ? <span className="badge badge--warn">{p.stock} шт</span> : `${p.stock} шт`}</td>
                   <td>
                     <span className={`badge ${p.is_active ? "badge--ok" : "badge--muted"}`}>
                       {p.is_active ? "Активен" : "Скрыт"}
@@ -293,8 +282,8 @@ export function ProductsPage() {
                       <button className="actions-menu__item" onClick={() => toggleActive(p)}>
                         {p.is_active ? "Скрыть" : "Показать"}
                       </button>
-                      <button className="actions-menu__item" onClick={() => setHistoryProduct(p)}>
-                        История
+                      <button className="actions-menu__item" onClick={() => setStatsProduct(p)}>
+                        Аналитика
                       </button>
                       <button className="actions-menu__item" onClick={() => openEdit(p)}>
                         Изменить
@@ -377,40 +366,23 @@ export function ProductsPage() {
               />
             </label>
 
-            <div className="form-row">
-              <label className="form-field">
-                Себестоимость, ₽
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.cost_price}
-                  onChange={(e) => setForm({ ...form, cost_price: e.target.value })}
-                />
-              </label>
-              <label className="form-field">
-                Базовая цена, ₽
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.base_price}
-                  onChange={(e) => setForm({ ...form, base_price: e.target.value })}
-                  required
-                />
-              </label>
-            </div>
-
             <label className="form-field">
-              Остаток на складе
+              Базовая цена, ₽
               <input
                 type="number"
                 min="0"
-                value={form.stock}
-                onChange={(e) => setForm({ ...form, stock: e.target.value })}
+                step="0.01"
+                value={form.base_price}
+                onChange={(e) => setForm({ ...form, base_price: e.target.value })}
                 required
               />
             </label>
+
+            {!editingProduct && (
+              <p className="form-hint" style={{ marginTop: -8 }}>
+                Товар создастся с остатком 0 — чтобы он появился на складе, оформите приёмку.
+              </p>
+            )}
 
             <div className="form-field">
               <span>Фотографии</span>
@@ -522,104 +494,46 @@ export function ProductsPage() {
         </Modal>
       )}
 
-      {historyProduct && (
-        <ProductHistoryModal
-          product={historyProduct}
-          onClose={() => setHistoryProduct(null)}
-          onReceived={(updated) => {
-            setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-            setHistoryProduct(updated);
-          }}
-        />
+      {statsProduct && (
+        <ProductAnalyticsModal product={statsProduct} onClose={() => setStatsProduct(null)} />
       )}
     </div>
   );
 }
 
-function reasonLabel(reason: StockHistoryEntry["reason"]): string {
-  if (reason === "order") return "Заказ";
-  if (reason === "receipt") return "Приёмка";
-  return "Ручная правка";
-}
-
-function ProductHistoryModal({
-  product,
-  onClose,
-  onReceived,
-}: {
-  product: ProductAdmin;
-  onClose: () => void;
-  onReceived: (updated: ProductAdmin) => void;
-}) {
+function ProductAnalyticsModal({ product, onClose }: { product: ProductAdmin; onClose: () => void }) {
   const [sales, setSales] = useState<MonthlyPoint[]>([]);
-  const [stockHistory, setStockHistory] = useState<StockHistoryEntry[]>([]);
   const [priceHistory, setPriceHistory] = useState<PriceHistoryEntry[]>([]);
   const [stats, setStats] = useState<ProductStats | null>(null);
   const [buyers, setBuyers] = useState<ProductBuyer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [receiptQty, setReceiptQty] = useState("");
-  const [receiptCost, setReceiptCost] = useState("");
-  const [receiptSubmitting, setReceiptSubmitting] = useState(false);
-  const [receiptError, setReceiptError] = useState<string | null>(null);
-
-  function loadStockHistory() {
-    return api
-      .get<StockHistoryEntry[]>(`/admin/products/${product.id}/stock-history?limit=30`)
-      .then(setStockHistory);
-  }
-
   useEffect(() => {
     setIsLoading(true);
     Promise.all([
       api.get<MonthlyPoint[]>(`/admin/analytics/products/${product.id}/sales?months=6`),
-      loadStockHistory(),
       api.get<PriceHistoryEntry[]>(`/admin/products/${product.id}/price-history?limit=30`),
       api.get<ProductStats>(`/admin/analytics/products/${product.id}/stats`),
       api.get<ProductBuyer[]>(`/admin/analytics/products/${product.id}/buyers?limit=10`),
     ])
-      .then(([s, , ph, st, b]) => {
+      .then(([s, ph, st, b]) => {
         setSales(s);
         setPriceHistory(ph);
         setStats(st);
         setBuyers(b);
       })
-      .catch((e) => setError(e instanceof ApiError ? e.message : "Не удалось загрузить историю"))
+      .catch((e) => setError(e instanceof ApiError ? e.message : "Не удалось загрузить аналитику"))
       .finally(() => setIsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.id]);
-
-  async function handleReceipt(e: FormEvent) {
-    e.preventDefault();
-    if (!receiptQty || !receiptCost) {
-      setReceiptError("Укажите количество и цену закупки за единицу");
-      return;
-    }
-    setReceiptSubmitting(true);
-    setReceiptError(null);
-    try {
-      await api.post("/admin/receipts", {
-        items: [{ product_id: product.id, quantity: Number(receiptQty), unit_cost: receiptCost }],
-      });
-      setReceiptQty("");
-      setReceiptCost("");
-      const updated = await api.get<ProductAdmin>(`/admin/products/${product.id}`);
-      onReceived(updated);
-      await loadStockHistory();
-    } catch (e) {
-      setReceiptError(e instanceof ApiError ? e.message : "Не удалось оприходовать товар");
-    } finally {
-      setReceiptSubmitting(false);
-    }
-  }
 
   const costPrice = Number(product.cost_price);
   const profitPerUnit = Number(product.base_price) - costPrice;
   const markupPercent = costPrice > 0 ? (profitPerUnit / costPrice) * 100 : null;
 
   return (
-    <Modal title={`История: ${product.name}`} onClose={onClose} wide>
+    <Modal title={`Аналитика: ${product.name}`} onClose={onClose} wide>
       {isLoading ? (
         <div className="table-loading">Загрузка...</div>
       ) : error ? (
@@ -634,7 +548,7 @@ function ProductHistoryModal({
             <div className="stat-card">
               <div className="stat-card__label">Прибыль с единицы</div>
               <div className="stat-card__value">{formatPrice(profitPerUnit)}</div>
-              <div className="stat-card__sub">Цена продажи − себестоимость</div>
+              <div className="stat-card__sub">Цена продажи − текущая себестоимость</div>
             </div>
             <div className="stat-card">
               <div className="stat-card__label">Наценка</div>
@@ -678,71 +592,37 @@ function ProductHistoryModal({
           <h3 style={{ fontSize: 14, marginBottom: 4 }}>Продажи по месяцам</h3>
           <div style={{ marginBottom: 24 }}>
             <BarChart
-              data={sales.map((p) => ({ label: p.month.slice(2), value: p.quantity }))}
-              formatValue={(v) => `${v} шт`}
+              data={sales.map((p) => ({ label: p.month.slice(2), value: Number(p.revenue) }))}
+              formatValue={(v) => formatPrice(v)}
               color="#2c5a8c"
             />
           </div>
 
-          <div className="form-row">
-            <div>
-              <h3 style={{ fontSize: 14, marginBottom: 8 }}>История цены</h3>
-              <div className="table-wrap" style={{ maxHeight: 220, overflowY: "auto" }}>
-                {priceHistory.length === 0 ? (
-                  <div className="table-empty">Изменений пока не было</div>
-                ) : (
-                  <table className="data-table">
-                    <tbody>
-                      {priceHistory.map((h) => (
-                        <tr key={h.id}>
-                          <td style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
-                            {formatDateTime(h.created_at)}
-                          </td>
-                          <td style={{ whiteSpace: "nowrap" }}>
-                            {h.old_price ? `${formatPrice(h.old_price)} → ` : "установлена: "}
-                            <strong>{formatPrice(h.new_price)}</strong>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <h3 style={{ fontSize: 14, marginBottom: 8 }}>История остатков</h3>
-              <div className="table-wrap" style={{ maxHeight: 220, overflowY: "auto" }}>
-                {stockHistory.length === 0 ? (
-                  <div className="table-empty">Изменений пока не было</div>
-                ) : (
-                  <table className="data-table">
-                    <tbody>
-                      {stockHistory.map((h) => (
-                        <tr key={h.id}>
-                          <td style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
-                            {formatDateTime(h.created_at)}
-                          </td>
-                          <td style={{ color: h.change < 0 ? "var(--color-danger)" : "var(--color-primary)" }}>
-                            {h.change > 0 ? "+" : ""}
-                            {h.change}
-                          </td>
-                          <td style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
-                            {reasonLabel(h.reason)}
-                            {h.order_id ? ` №${h.order_id}` : ""}
-                            {h.unit_cost ? ` по ${formatPrice(h.unit_cost)}/шт` : ""}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            </div>
+          <h3 style={{ fontSize: 14, marginBottom: 8 }}>История цены</h3>
+          <div className="table-wrap" style={{ maxHeight: 220, overflowY: "auto", marginBottom: 24 }}>
+            {priceHistory.length === 0 ? (
+              <div className="table-empty">Изменений пока не было</div>
+            ) : (
+              <table className="data-table">
+                <tbody>
+                  {priceHistory.map((h) => (
+                    <tr key={h.id}>
+                      <td style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
+                        {formatDateTime(h.created_at)}
+                      </td>
+                      <td style={{ whiteSpace: "nowrap" }}>
+                        {h.old_price ? `${formatPrice(h.old_price)} → ` : "установлена: "}
+                        <strong>{formatPrice(h.new_price)}</strong>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
 
           <h3 style={{ fontSize: 14, marginBottom: 8 }}>Кто покупал</h3>
-          <div className="table-wrap" style={{ maxHeight: 220, overflowY: "auto", marginBottom: 24 }}>
+          <div className="table-wrap" style={{ maxHeight: 220, overflowY: "auto" }}>
             {buyers.length === 0 ? (
               <div className="table-empty">Пока никто не покупал</div>
             ) : (
@@ -758,45 +638,6 @@ function ProductHistoryModal({
                 </tbody>
               </table>
             )}
-          </div>
-
-          <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: 16, marginTop: 4 }}>
-            <h3 style={{ fontSize: 14, marginBottom: 4 }}>Приёмка товара</h3>
-            <p className="form-hint" style={{ marginTop: 0, marginBottom: 12 }}>
-              Себестоимость: {formatPrice(product.cost_price)}. Остаток: {product.stock} шт.
-              Приёмка пересчитывает себестоимость по средневзвешенной — как в бухучёте.
-            </p>
-            <form onSubmit={handleReceipt} className="form-row" style={{ alignItems: "flex-end" }}>
-              <label className="form-field">
-                Количество, шт
-                <input
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={receiptQty}
-                  onChange={(e) => setReceiptQty(e.target.value)}
-                />
-              </label>
-              <label className="form-field">
-                Цена закупки за единицу, ₽
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={receiptCost}
-                  onChange={(e) => setReceiptCost(e.target.value)}
-                />
-              </label>
-              <button
-                type="submit"
-                className="btn"
-                disabled={receiptSubmitting}
-                style={{ marginBottom: 16 }}
-              >
-                {receiptSubmitting ? "Оприходование..." : "Оприходовать"}
-              </button>
-            </form>
-            {receiptError && <p className="form-error">{receiptError}</p>}
           </div>
         </>
       )}

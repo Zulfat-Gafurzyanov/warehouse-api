@@ -5,6 +5,7 @@ import { ClientDetailPage } from "./pages/ClientDetailPage";
 import { ClientPricesPage } from "./pages/ClientPricesPage";
 import { ClientsPage } from "./pages/ClientsPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { InventoryPage } from "./pages/InventoryPage";
 import { LoginPage } from "./pages/LoginPage";
 import { OrdersPage } from "./pages/OrdersPage";
 import { ProductsPage } from "./pages/ProductsPage";
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/orders/:id" element={<OrdersPage />} />
         <Route path="/products" element={<ProductsPage />} />
+        <Route path="/warehouse" element={<InventoryPage />} />
         <Route path="/receipts" element={<ReceiptsPage />} />
         <Route path="/categories" element={<CategoriesPage />} />
         <Route path="/clients" element={<ClientsPage />} />
