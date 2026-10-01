@@ -85,30 +85,6 @@ export function ClientsPage() {
     }
   }
 
-  async function toggleActive(user: UserProfile) {
-    try {
-      await api.patch(`/admin/users/${user.id}/active`, { is_active: !user.is_active });
-      load();
-    } catch (e) {
-      alert(e instanceof ApiError ? e.message : "Не удалось изменить статус клиента");
-    }
-  }
-
-  async function handleDelete(user: UserProfile) {
-    if (
-      !confirm(
-        `Удалить клиента «${user.company_name || user.login}»? Его заказы и статистика продаж останутся, но доступ и личные данные пропадут. Действие необратимо.`,
-      )
-    )
-      return;
-    try {
-      await api.delete(`/admin/users/${user.id}`);
-      load();
-    } catch (e) {
-      alert(e instanceof ApiError ? e.message : "Не удалось удалить клиента");
-    }
-  }
-
   return (
     <div>
       <div className="page-header">
@@ -172,22 +148,9 @@ export function ClientsPage() {
                     </span>
                   </td>
                   <td>
-                    <div className="table-actions">
-                      <Link to={`/clients/${u.id}`} className="btn btn--outline btn--sm">
-                        Карточка
-                      </Link>
-                      <button
-                        className={`btn btn--sm ${u.is_active ? "btn--danger" : ""}`}
-                        onClick={() => toggleActive(u)}
-                      >
-                        {u.is_active ? "Заблокировать" : "Разблокировать"}
-                      </button>
-                      {u.role !== "admin" && (
-                        <button className="btn btn--danger btn--sm" onClick={() => handleDelete(u)}>
-                          Удалить
-                        </button>
-                      )}
-                    </div>
+                    <Link to={`/clients/${u.id}`} className="btn btn--outline btn--sm">
+                      Карточка
+                    </Link>
                   </td>
                 </tr>
               ))}

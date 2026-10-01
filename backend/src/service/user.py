@@ -30,9 +30,12 @@ class UserService:
         return [UserProfile(**dict(u)) for u in users]
 
     async def set_active(self, user_id: int, is_active: bool) -> UserProfile:
-        user = await self.repository.set_active(user_id, is_active)
-        if not user:
+        current = await self.repository.get_by_id(user_id)
+        if not current:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Пользователь не найден")
+        if current["role"] == "admin":
+            raise HTTPException(status.HTTP_409_CONFLICT, "Нельзя заблокировать учётную запись администратора")
+        user = await self.repository.set_active(user_id, is_active)
         return UserProfile(**dict(user))
 
     async def delete(self, user_id: int) -> None:

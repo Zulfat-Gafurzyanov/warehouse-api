@@ -192,13 +192,15 @@ export function ClientDetailPage() {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className={`btn ${user.is_active ? "btn--danger" : ""}`} onClick={toggleActive}>
-            {user.is_active ? "Заблокировать" : "Разблокировать"}
-          </button>
           {user.role !== "admin" && (
-            <button className="btn btn--danger" onClick={handleDeleteClient}>
-              Удалить клиента
-            </button>
+            <>
+              <button className={`btn ${user.is_active ? "btn--danger" : ""}`} onClick={toggleActive}>
+                {user.is_active ? "Заблокировать" : "Разблокировать"}
+              </button>
+              <button className="btn btn--danger" onClick={handleDeleteClient}>
+                Удалить клиента
+              </button>
+            </>
           )}
         </div>
       </div>

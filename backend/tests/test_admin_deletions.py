@@ -52,6 +52,30 @@ async def test_delete_nonexistent_client_404(client: AsyncClient, mock_db_conn):
     assert resp.status_code == 404
 
 
+@pytest.mark.asyncio
+async def test_admin_can_block_client(client: AsyncClient, mock_db_conn):
+    mock_db_conn.fetchrow.side_effect = [_admin_record(), _client_record(), _client_record()]
+
+    resp = await client.patch(
+        "/api/v1/admin/users/5/active",
+        headers=_auth_header(1, "admin"),
+        json={"is_active": False},
+    )
+    assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_cannot_block_admin_account(client: AsyncClient, mock_db_conn):
+    mock_db_conn.fetchrow.side_effect = [_admin_record(), _admin_record(user_id=5)]
+
+    resp = await client.patch(
+        "/api/v1/admin/users/5/active",
+        headers=_auth_header(1, "admin"),
+        json={"is_active": False},
+    )
+    assert resp.status_code == 409
+
+
 # ── Удаление заказа ───────────────────────────────────────
 
 
