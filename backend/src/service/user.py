@@ -36,9 +36,12 @@ class UserService:
         return UserProfile(**dict(user))
 
     async def delete(self, user_id: int) -> None:
-        deleted = await self.repository.delete(user_id)
-        if not deleted:
+        user = await self.repository.get_by_id(user_id)
+        if not user:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Пользователь не найден")
+        if user["role"] == "admin":
+            raise HTTPException(status.HTTP_409_CONFLICT, "Нельзя удалить учётную запись администратора")
+        await self.repository.delete(user_id)
 
     # ── Администрирование B2B-клиентов ───────────────────
 

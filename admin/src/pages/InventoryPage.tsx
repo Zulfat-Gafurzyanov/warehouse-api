@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { api, ApiError } from "../api/client";
+import { api, ApiError, resolveImageUrl } from "../api/client";
 import type { Category, ProductAdmin, ProductStats, StockHistoryEntry } from "../api/types";
 import { Modal } from "../components/Modal";
 import { formatDateTime, formatPrice } from "../utils/format";
@@ -20,6 +20,7 @@ export function InventoryPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("");
 
   const [stockProduct, setStockProduct] = useState<ProductAdmin | null>(null);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   function load() {
     setIsLoading(true);
@@ -88,6 +89,7 @@ export function InventoryPage() {
           <table className="data-table">
             <thead>
               <tr>
+                <th></th>
                 <th>Товар</th>
                 <th>Артикул</th>
                 <th>Категория</th>
@@ -99,6 +101,21 @@ export function InventoryPage() {
             <tbody>
               {products.map((p) => (
                 <tr key={p.id} onClick={() => setStockProduct(p)} style={{ cursor: "pointer" }}>
+                  <td>
+                    {p.images[0]?.url ? (
+                      <img
+                        src={resolveImageUrl(p.images[0].url)}
+                        alt=""
+                        className="receipt-line-thumb"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setZoomedImage(p.images[0].url);
+                        }}
+                      />
+                    ) : (
+                      <div className="receipt-line-thumb receipt-line-thumb--empty" />
+                    )}
+                  </td>
                   <td>
                     {p.name}
                     {!p.is_active && <span className="badge badge--muted" style={{ marginLeft: 8 }}>Скрыт</span>}
@@ -115,7 +132,7 @@ export function InventoryPage() {
                         setStockProduct(p);
                       }}
                     >
-                      Остаток
+                      История и корректировка
                     </button>
                   </td>
                 </tr>
@@ -134,6 +151,12 @@ export function InventoryPage() {
             setStockProduct(updated);
           }}
         />
+      )}
+
+      {zoomedImage && (
+        <Modal title="Фото товара" onClose={() => setZoomedImage(null)}>
+          <img src={resolveImageUrl(zoomedImage)} alt="" style={{ width: "100%", borderRadius: "var(--radius-md)" }} />
+        </Modal>
       )}
     </div>
   );

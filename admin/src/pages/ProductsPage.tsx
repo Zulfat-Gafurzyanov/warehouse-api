@@ -58,6 +58,7 @@ export function ProductsPage() {
   const [newPhotoUrl, setNewPhotoUrl] = useState("");
 
   const [statsProduct, setStatsProduct] = useState<ProductAdmin | null>(null);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   function load() {
     setIsLoading(true);
@@ -254,6 +255,7 @@ export function ProductsPage() {
           <table className="data-table">
             <thead>
               <tr>
+                <th></th>
                 <th>Товар</th>
                 <th>Артикул</th>
                 <th>Категория</th>
@@ -265,6 +267,18 @@ export function ProductsPage() {
             <tbody>
               {products.map((p) => (
                 <tr key={p.id}>
+                  <td>
+                    {p.images[0]?.url ? (
+                      <img
+                        src={resolveImageUrl(p.images[0].url)}
+                        alt=""
+                        className="receipt-line-thumb"
+                        onClick={() => setZoomedImage(p.images[0].url)}
+                      />
+                    ) : (
+                      <div className="receipt-line-thumb receipt-line-thumb--empty" />
+                    )}
+                  </td>
                   <td>
                     {p.name}
                     {p.is_new && <span className="badge badge--info" style={{ marginLeft: 8 }}>Новинка</span>}
@@ -496,6 +510,12 @@ export function ProductsPage() {
 
       {statsProduct && (
         <ProductAnalyticsModal product={statsProduct} onClose={() => setStatsProduct(null)} />
+      )}
+
+      {zoomedImage && (
+        <Modal title="Фото товара" onClose={() => setZoomedImage(null)}>
+          <img src={resolveImageUrl(zoomedImage)} alt="" style={{ width: "100%", borderRadius: "var(--radius-md)" }} />
+        </Modal>
       )}
     </div>
   );

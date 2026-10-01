@@ -13,10 +13,11 @@ class Order(TimestampMixin, Base):
 
     id: Mapped[int] = mapped_column(
         sa.BigInteger, primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(
+    # SET NULL — удаление клиента не должно утягивать за собой заказы и их статистику.
+    user_id: Mapped[int | None] = mapped_column(
         sa.BigInteger,
-        sa.ForeignKey("user.id", ondelete="RESTRICT"),
-        nullable=False,
+        sa.ForeignKey("user.id", ondelete="SET NULL"),
+        nullable=True,
     )
     status: Mapped[str] = mapped_column(
         sa.String(20), server_default="new", nullable=False)

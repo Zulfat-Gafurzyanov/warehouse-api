@@ -28,13 +28,15 @@ class OrderItemOut(BaseModel):
     product_id: int
     product_name: str
     product_sku: str
+    image_url: str | None = None
     quantity: int
     price: Decimal
 
 
 class OrderOut(BaseModel):
     id: int
-    user_id: int
+    # None — клиент, оформивший заказ, был удалён; сам заказ и его позиции сохраняются.
+    user_id: int | None
     status: OrderStatus
     comment: str | None
     total_amount: Decimal
@@ -44,7 +46,7 @@ class OrderOut(BaseModel):
 
 class OrderListItem(BaseModel):
     id: int
-    user_id: int
+    user_id: int | None
     status: OrderStatus
     total_amount: Decimal
     item_count: int
@@ -57,3 +59,7 @@ class OrderListItem(BaseModel):
 
 class OrderStatusUpdate(BaseModel):
     status: OrderStatus
+
+
+class OrderCommentUpdate(BaseModel):
+    comment: str | None = None

@@ -329,6 +329,18 @@ export function ReceiptsPage() {
                   {detailReceipt.items.map((item) => (
                     <tr key={item.product_id}>
                       <td>
+                        {item.image_url ? (
+                          <img
+                            src={resolveImageUrl(item.image_url)}
+                            alt=""
+                            className="receipt-line-thumb"
+                            onClick={() => setZoomedImage(item.image_url)}
+                          />
+                        ) : (
+                          <div className="receipt-line-thumb receipt-line-thumb--empty" />
+                        )}
+                      </td>
+                      <td>
                         {item.product_name}{" "}
                         <span style={{ color: "var(--color-text-muted)" }}>({item.product_sku})</span>
                       </td>

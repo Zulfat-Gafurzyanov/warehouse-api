@@ -94,6 +94,21 @@ export function ClientsPage() {
     }
   }
 
+  async function handleDelete(user: UserProfile) {
+    if (
+      !confirm(
+        `Удалить клиента «${user.company_name || user.login}»? Его заказы и статистика продаж останутся, но доступ и личные данные пропадут. Действие необратимо.`,
+      )
+    )
+      return;
+    try {
+      await api.delete(`/admin/users/${user.id}`);
+      load();
+    } catch (e) {
+      alert(e instanceof ApiError ? e.message : "Не удалось удалить клиента");
+    }
+  }
+
   return (
     <div>
       <div className="page-header">
@@ -167,6 +182,11 @@ export function ClientsPage() {
                       >
                         {u.is_active ? "Заблокировать" : "Разблокировать"}
                       </button>
+                      {u.role !== "admin" && (
+                        <button className="btn btn--danger btn--sm" onClick={() => handleDelete(u)}>
+                          Удалить
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

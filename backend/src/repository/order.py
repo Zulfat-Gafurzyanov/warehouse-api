@@ -59,7 +59,12 @@ class OrderRepository:
     async def get_items(self, order_id: int) -> list[asyncpg.Record]:
         return await self.conn.fetch(
             """
-            SELECT oi.product_id, oi.quantity, oi.price, p.name AS product_name, p.sku AS product_sku
+            SELECT oi.product_id, oi.quantity, oi.price, p.name AS product_name, p.sku AS product_sku,
+                   (
+                       SELECT pi.url FROM product_image pi
+                       WHERE pi.product_id = p.id
+                       ORDER BY pi.sort_order LIMIT 1
+                   ) AS image_url
             FROM order_item oi
             JOIN product p ON p.id = oi.product_id
             WHERE oi.order_id = $1
@@ -110,7 +115,7 @@ class OrderRepository:
                    u.login AS client_login, u.company_name AS client_company_name,
                    (SELECT COUNT(*) FROM order_item oi WHERE oi.order_id = o.id) AS item_count
             FROM "order" o
-            JOIN "user" u ON u.id = o.user_id
+            LEFT JOIN "user" u ON u.id = o.user_id
             WHERE ($3::text IS NULL OR o.status = $3)
               AND ($4::bigint IS NULL OR o.user_id = $4)
             ORDER BY o.id DESC
@@ -118,6 +123,32 @@ class OrderRepository:
             """,
             limit, offset, status_filter, user_id,
         )
+
+    async def delete_with_stock_restore(self, order_id: int) -> bool:
+        """Удаление ошибочного/ненужного заказа — возвращает списанный остаток обратно на
+        склад (это не было реальной отгрузкой) и убирает заказ из всей статистики продаж."""
+        async with self.conn.transaction():
+            items = await self.conn.fetch(
+                "SELECT product_id, quantity FROM order_item WHERE order_id = $1", order_id
+            )
+            if not items:
+                exists = await self.conn.fetchval('SELECT 1 FROM "order" WHERE id = $1', order_id)
+                if not exists:
+                    return False
+            for item in items:
+                await self.conn.execute(
+                    "UPDATE product SET stock = stock + $2, updated_at = NOW() WHERE id = $1",
+                    item["product_id"], item["quantity"],
+                )
+                await self.conn.execute(
+                    """
+                    INSERT INTO stock_history (product_id, change, reason)
+                    VALUES ($1, $2, 'manual')
+                    """,
+                    item["product_id"], item["quantity"],
+                )
+            result = await self.conn.execute('DELETE FROM "order" WHERE id = $1', order_id)
+        return result == "DELETE 1"
 
     async def set_status(self, order_id: int, status: str) -> asyncpg.Record | None:
         return await self.conn.fetchrow(
@@ -128,4 +159,15 @@ class OrderRepository:
             RETURNING {_ORDER_COLUMNS}
             """,
             order_id, status,
+        )
+
+    async def update_comment(self, order_id: int, comment: str | None) -> asyncpg.Record | None:
+        return await self.conn.fetchrow(
+            f"""
+            UPDATE "order"
+            SET comment = $2, updated_at = NOW()
+            WHERE id = $1
+            RETURNING {_ORDER_COLUMNS}
+            """,
+            order_id, comment,
         )

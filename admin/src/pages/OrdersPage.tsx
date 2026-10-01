@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { api, ApiError } from "../api/client";
+import { api, ApiError, resolveImageUrl } from "../api/client";
 import {
   ORDER_STATUS_LABELS,
   ORDER_STATUS_OPTIONS,
@@ -8,6 +8,7 @@ import {
   type OrderOut,
   type OrderStatus,
 } from "../api/types";
+import { Modal } from "../components/Modal";
 import { formatDateTime, formatPrice } from "../utils/format";
 
 function statusBadgeClass(status: OrderStatus): string {
@@ -38,6 +39,11 @@ export function OrdersPage() {
   const [details, setDetails] = useState<Record<number, OrderOut>>({});
   const [detailsLoading, setDetailsLoading] = useState<number | null>(null);
   const [statusUpdating, setStatusUpdating] = useState<number | null>(null);
+
+  const [commentDrafts, setCommentDrafts] = useState<Record<number, string>>({});
+  const [commentSaving, setCommentSaving] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState<number | null>(null);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   function load() {
     setIsLoading(true);
@@ -78,6 +84,7 @@ export function OrdersPage() {
       try {
         const order = await api.get<OrderOut>(`/admin/orders/${orderId}`);
         setDetails((prev) => ({ ...prev, [orderId]: order }));
+        setCommentDrafts((prev) => ({ ...prev, [orderId]: order.comment ?? "" }));
       } catch {
         /* покажем как есть — строка просто не развернётся с деталями */
       } finally {
@@ -96,6 +103,39 @@ export function OrdersPage() {
       alert(e instanceof ApiError ? e.message : "Не удалось изменить статус заказа");
     } finally {
       setStatusUpdating(null);
+    }
+  }
+
+  async function handleCommentSave(orderId: number) {
+    setCommentSaving(orderId);
+    try {
+      const updated = await api.patch<OrderOut>(`/admin/orders/${orderId}/comment`, {
+        comment: commentDrafts[orderId]?.trim() || null,
+      });
+      setDetails((prev) => ({ ...prev, [orderId]: updated }));
+    } catch (e) {
+      alert(e instanceof ApiError ? e.message : "Не удалось сохранить комментарий");
+    } finally {
+      setCommentSaving(null);
+    }
+  }
+
+  async function handleDelete(order: OrderListItem) {
+    if (
+      !confirm(
+        `Удалить заказ №${order.id}? Списанный остаток вернётся на склад, заказ пропадёт из статистики продаж. Действие необратимо.`,
+      )
+    )
+      return;
+    setDeleting(order.id);
+    try {
+      await api.delete(`/admin/orders/${order.id}`);
+      setOrders((prev) => prev.filter((o) => o.id !== order.id));
+      if (expandedId === order.id) setExpandedId(null);
+    } catch (e) {
+      alert(e instanceof ApiError ? e.message : "Не удалось удалить заказ");
+    } finally {
+      setDeleting(null);
     }
   }
 
@@ -149,9 +189,15 @@ export function OrdersPage() {
                   >
                     <td>№{o.id}</td>
                     <td>
-                      <Link to={`/clients/${o.user_id}`} onClick={(e) => e.stopPropagation()}>
-                        {o.client_company_name || o.client_login || `#${o.user_id}`}
-                      </Link>
+                      {o.user_id ? (
+                        <Link to={`/clients/${o.user_id}`} onClick={(e) => e.stopPropagation()}>
+                          {o.client_company_name || o.client_login || `#${o.user_id}`}
+                        </Link>
+                      ) : (
+                        <span style={{ color: "var(--color-text-muted)" }}>
+                          {o.client_company_name || o.client_login || "Клиент удалён"}
+                        </span>
+                      )}
                     </td>
                     <td>{formatDateTime(o.created_at)}</td>
                     <td>{o.item_count}</td>
@@ -174,6 +220,21 @@ export function OrdersPage() {
                                 {details[o.id].items.map((item) => (
                                   <tr key={item.product_id}>
                                     <td>
+                                      {item.image_url ? (
+                                        <img
+                                          src={resolveImageUrl(item.image_url)}
+                                          alt=""
+                                          className="receipt-line-thumb"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setZoomedImage(item.image_url);
+                                          }}
+                                        />
+                                      ) : (
+                                        <div className="receipt-line-thumb receipt-line-thumb--empty" />
+                                      )}
+                                    </td>
+                                    <td>
                                       {item.product_name}{" "}
                                       <span style={{ color: "var(--color-text-muted)" }}>
                                         ({item.product_sku})
@@ -188,28 +249,61 @@ export function OrdersPage() {
                               </tbody>
                             </table>
 
-                            {details[o.id].comment && (
-                              <p style={{ marginBottom: 14 }}>
-                                <strong>Комментарий:</strong> {details[o.id].comment}
-                              </p>
-                            )}
+                            <div className="form-row" style={{ alignItems: "flex-end" }}>
+                              <label className="form-field" style={{ maxWidth: 260 }}>
+                                Статус заказа
+                                <select
+                                  value={details[o.id].status}
+                                  disabled={statusUpdating === o.id}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onChange={(e) =>
+                                    handleStatusChange(o.id, e.target.value as OrderStatus)
+                                  }
+                                >
+                                  {ORDER_STATUS_OPTIONS.map((s) => (
+                                    <option key={s} value={s}>
+                                      {ORDER_STATUS_LABELS[s]}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
 
-                            <label className="form-field" style={{ maxWidth: 260 }}>
-                              Статус заказа
-                              <select
-                                value={details[o.id].status}
-                                disabled={statusUpdating === o.id}
-                                onChange={(e) =>
-                                  handleStatusChange(o.id, e.target.value as OrderStatus)
-                                }
+                              <label className="form-field" style={{ flex: 1 }}>
+                                Комментарий
+                                <input
+                                  value={commentDrafts[o.id] ?? ""}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onChange={(e) =>
+                                    setCommentDrafts((prev) => ({ ...prev, [o.id]: e.target.value }))
+                                  }
+                                  placeholder="Нет комментария"
+                                />
+                              </label>
+                              <button
+                                type="button"
+                                className="btn btn--outline btn--sm"
+                                style={{ marginBottom: 16 }}
+                                disabled={commentSaving === o.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCommentSave(o.id);
+                                }}
                               >
-                                {ORDER_STATUS_OPTIONS.map((s) => (
-                                  <option key={s} value={s}>
-                                    {ORDER_STATUS_LABELS[s]}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
+                                {commentSaving === o.id ? "Сохранение..." : "Сохранить"}
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn--danger btn--sm"
+                                style={{ marginBottom: 16 }}
+                                disabled={deleting === o.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(o);
+                                }}
+                              >
+                                {deleting === o.id ? "Удаление..." : "Удалить заказ"}
+                              </button>
+                            </div>
                           </div>
                         )}
                       </td>
@@ -221,6 +315,12 @@ export function OrdersPage() {
           </table>
         )}
       </div>
+
+      {zoomedImage && (
+        <Modal title="Фото товара" onClose={() => setZoomedImage(null)}>
+          <img src={resolveImageUrl(zoomedImage)} alt="" style={{ width: "100%", borderRadius: "var(--radius-md)" }} />
+        </Modal>
+      )}
     </div>
   );
 }

@@ -71,3 +71,13 @@ async def reset_user_password(
 ) -> UserProfile:
     """Администратор задаёт клиенту новый пароль (клиент не может сам зарегистрироваться/восстановить его)."""
     return await user_service.reset_password(user_id, body.password)
+
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_client(
+    user_id: int,
+    user_service: Annotated[UserService, Depends(get_user_service)],
+) -> None:
+    """Удаляет клиента. Его заказы и вся статистика продаж/прибыли остаются нетронутыми —
+    только теряют привязку к логину (см. order.user_id ON DELETE SET NULL)."""
+    await user_service.delete(user_id)

@@ -91,6 +91,11 @@ class ReceiptRepository:
         return await self.conn.fetch(
             """
             SELECT ri.product_id, p.name AS product_name, p.sku AS product_sku,
+                   (
+                       SELECT pi.url FROM product_image pi
+                       WHERE pi.product_id = p.id
+                       ORDER BY pi.sort_order LIMIT 1
+                   ) AS image_url,
                    ri.quantity, ri.unit_cost
             FROM stock_receipt_item ri
             JOIN product p ON p.id = ri.product_id

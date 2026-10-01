@@ -19,6 +19,7 @@ class ReceiptItemOut(BaseModel):
     product_id: int
     product_name: str
     product_sku: str
+    image_url: str | None = None
     quantity: int
     unit_cost: Decimal
 

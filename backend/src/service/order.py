@@ -90,3 +90,15 @@ class OrderService:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Заказ не найден")
         items = await self.order_repository.get_items(order_id)
         return OrderOut(**dict(order), items=[OrderItemOut(**dict(i)) for i in items])
+
+    async def admin_update_comment(self, order_id: int, comment: str | None) -> OrderOut:
+        order = await self.order_repository.update_comment(order_id, comment)
+        if not order:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Заказ не найден")
+        items = await self.order_repository.get_items(order_id)
+        return OrderOut(**dict(order), items=[OrderItemOut(**dict(i)) for i in items])
+
+    async def admin_delete(self, order_id: int) -> None:
+        deleted = await self.order_repository.delete_with_stock_restore(order_id)
+        if not deleted:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Заказ не найден")

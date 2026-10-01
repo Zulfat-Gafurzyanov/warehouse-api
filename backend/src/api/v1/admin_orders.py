@@ -1,9 +1,15 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 
 from src.api.deps import get_current_admin, get_order_service
-from src.schemas.order import OrderListItem, OrderOut, OrderStatus, OrderStatusUpdate
+from src.schemas.order import (
+    OrderCommentUpdate,
+    OrderListItem,
+    OrderOut,
+    OrderStatus,
+    OrderStatusUpdate,
+)
 from src.service.order import OrderService
 
 router = APIRouter(
@@ -41,3 +47,22 @@ async def set_order_status(
     order_service: Annotated[OrderService, Depends(get_order_service)],
 ) -> OrderOut:
     return await order_service.admin_set_status(order_id, body.status.value)
+
+
+@router.patch("/{order_id}/comment")
+async def update_order_comment(
+    order_id: int,
+    body: OrderCommentUpdate,
+    order_service: Annotated[OrderService, Depends(get_order_service)],
+) -> OrderOut:
+    return await order_service.admin_update_comment(order_id, body.comment)
+
+
+@router.delete("/{order_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_order(
+    order_id: int,
+    order_service: Annotated[OrderService, Depends(get_order_service)],
+) -> None:
+    """Удаляет случайный/ненужный заказ и возвращает списанный остаток на склад —
+    заказ никогда не был реальной отгрузкой, поэтому его стоит убрать из статистики целиком."""
+    await order_service.admin_delete(order_id)

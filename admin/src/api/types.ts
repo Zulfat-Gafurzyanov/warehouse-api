@@ -145,13 +145,15 @@ export interface OrderItemOut {
   product_id: number;
   product_name: string;
   product_sku: string;
+  image_url: string | null;
   quantity: number;
   price: string;
 }
 
 export interface OrderOut {
   id: number;
-  user_id: number;
+  // null — клиент, оформивший заказ, был удалён; сам заказ сохраняется.
+  user_id: number | null;
   status: OrderStatus;
   comment: string | null;
   total_amount: string;
@@ -161,7 +163,7 @@ export interface OrderOut {
 
 export interface OrderListItem {
   id: number;
-  user_id: number;
+  user_id: number | null;
   status: OrderStatus;
   total_amount: string;
   item_count: number;
@@ -197,6 +199,7 @@ export interface ReceiptItemOut {
   product_id: number;
   product_name: string;
   product_sku: string;
+  image_url: string | null;
   quantity: number;
   unit_cost: string;
 }

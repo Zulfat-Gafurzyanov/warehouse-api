@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { api, ApiError } from "../api/client";
+import { api, ApiError, resolveImageUrl } from "../api/client";
 import {
   COOPERATION_LABELS,
   ORDER_STATUS_LABELS,
@@ -15,6 +15,7 @@ import {
   type UserProfile,
 } from "../api/types";
 import { BarChart } from "../components/BarChart";
+import { Modal } from "../components/Modal";
 import { formatDateTime, formatPrice } from "../utils/format";
 
 interface ProfileFormState {
@@ -138,6 +139,22 @@ export function ClientDetailPage() {
     }
   }
 
+  async function handleDeleteClient() {
+    if (!user) return;
+    if (
+      !confirm(
+        `Удалить клиента «${user.company_name || user.login}»? Его заказы и статистика продаж останутся, но доступ и личные данные пропадут. Действие необратимо.`,
+      )
+    )
+      return;
+    try {
+      await api.delete(`/admin/users/${userId}`);
+      navigate("/clients");
+    } catch (e) {
+      alert(e instanceof ApiError ? e.message : "Не удалось удалить клиента");
+    }
+  }
+
   if (isLoading) return <p className="table-loading">Загрузка...</p>;
   if (error || !user) {
     return (
@@ -174,9 +191,16 @@ export function ClientDetailPage() {
             )}
           </div>
         </div>
-        <button className={`btn ${user.is_active ? "btn--danger" : ""}`} onClick={toggleActive}>
-          {user.is_active ? "Заблокировать" : "Разблокировать"}
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className={`btn ${user.is_active ? "btn--danger" : ""}`} onClick={toggleActive}>
+            {user.is_active ? "Заблокировать" : "Разблокировать"}
+          </button>
+          {user.role !== "admin" && (
+            <button className="btn btn--danger" onClick={handleDeleteClient}>
+              Удалить клиента
+            </button>
+          )}
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 32 }}>
@@ -383,6 +407,7 @@ function ClientOrderHistory({ userId }: { userId: number }) {
   const [isLoading, setIsLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [details, setDetails] = useState<Record<number, OrderOut>>({});
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   useEffect(() => {
     api
@@ -451,6 +476,21 @@ function ClientOrderHistory({ userId }: { userId: number }) {
                             {details[o.id].items.map((item) => (
                               <tr key={item.product_id}>
                                 <td>
+                                  {item.image_url ? (
+                                    <img
+                                      src={resolveImageUrl(item.image_url)}
+                                      alt=""
+                                      className="receipt-line-thumb"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setZoomedImage(item.image_url);
+                                      }}
+                                    />
+                                  ) : (
+                                    <div className="receipt-line-thumb receipt-line-thumb--empty" />
+                                  )}
+                                </td>
+                                <td>
                                   {item.product_name}{" "}
                                   <span style={{ color: "var(--color-text-muted)" }}>({item.product_sku})</span>
                                 </td>
@@ -476,6 +516,12 @@ function ClientOrderHistory({ userId }: { userId: number }) {
           </table>
         )}
       </div>
+
+      {zoomedImage && (
+        <Modal title="Фото товара" onClose={() => setZoomedImage(null)}>
+          <img src={resolveImageUrl(zoomedImage)} alt="" style={{ width: "100%", borderRadius: "var(--radius-md)" }} />
+        </Modal>
+      )}
     </section>
   );
 }
