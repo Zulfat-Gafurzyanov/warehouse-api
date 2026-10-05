@@ -170,3 +170,19 @@ async def test_delete_product_referenced_by_orders_conflict(client: AsyncClient,
         headers=_auth_header(1, "admin"),
     )
     assert resp.status_code == 409
+    assert "заказах" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_delete_product_referenced_by_receipt_conflict(client: AsyncClient, mock_db_conn):
+    mock_db_conn.fetchrow.return_value = _admin_record()
+    fk_error = ForeignKeyViolationError("fk violation")
+    fk_error.constraint_name = "stock_receipt_item_product_id_fkey"
+    mock_db_conn.execute.side_effect = fk_error
+
+    resp = await client.delete(
+        "/api/v1/admin/products/1",
+        headers=_auth_header(1, "admin"),
+    )
+    assert resp.status_code == 409
+    assert "приёмки" in resp.json()["detail"]

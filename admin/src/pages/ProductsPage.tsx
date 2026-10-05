@@ -47,6 +47,7 @@ export function ProductsPage() {
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("");
+  const [showHidden, setShowHidden] = useState(false);
 
   const [editingProduct, setEditingProduct] = useState<ProductAdmin | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -87,6 +88,9 @@ export function ProductsPage() {
     const map = new Map(categories.map((c) => [c.id, c.name]));
     return (id: number) => map.get(id) ?? `#${id}`;
   }, [categories]);
+
+  const visibleProducts = showHidden ? products : products.filter((p) => p.is_active);
+  const hiddenCount = products.filter((p) => !p.is_active).length;
 
   function openCreate() {
     setEditingProduct(null);
@@ -219,7 +223,7 @@ export function ProductsPage() {
         <div>
           <h1>Товары</h1>
           <div className="page-header__sub">
-            {products.length} товаров — здесь только описание и цена, остатки смотрите на Складе
+            {visibleProducts.length} товаров — здесь только описание и цена, остатки смотрите на Складе
           </div>
         </div>
         <button className="btn" onClick={openCreate}>
@@ -242,6 +246,14 @@ export function ProductsPage() {
             </option>
           ))}
         </select>
+        <label className="checkbox-field" style={{ marginBottom: 0 }}>
+          <input
+            type="checkbox"
+            checked={showHidden}
+            onChange={(e) => setShowHidden(e.target.checked)}
+          />
+          Показывать скрытые{hiddenCount > 0 ? ` (${hiddenCount})` : ""}
+        </label>
       </div>
 
       <div className="table-wrap">
@@ -249,8 +261,10 @@ export function ProductsPage() {
           <div className="table-loading">Загрузка...</div>
         ) : error ? (
           <div className="table-error">{error}</div>
-        ) : products.length === 0 ? (
-          <div className="table-empty">Товары не найдены</div>
+        ) : visibleProducts.length === 0 ? (
+          <div className="table-empty">
+            {products.length === 0 ? "Товары не найдены" : "Нет видимых товаров — включите «Показывать скрытые»"}
+          </div>
         ) : (
           <table className="data-table">
             <thead>
@@ -265,7 +279,7 @@ export function ProductsPage() {
               </tr>
             </thead>
             <tbody>
-              {products.map((p) => (
+              {visibleProducts.map((p) => (
                 <tr key={p.id}>
                   <td>
                     {p.images[0]?.url ? (

@@ -67,9 +67,13 @@ class ProductService:
         try:
             deleted = await self.repository.delete(product_id)
         except ForeignKeyViolationError as e:
+            if e.constraint_name == "stock_receipt_item_product_id_fkey":
+                reason = "он есть в документах приёмки"
+            else:
+                reason = "он есть в заказах"
             raise HTTPException(
                 status.HTTP_409_CONFLICT,
-                "Нельзя удалить товар: он есть в заказах — скройте его вместо удаления",
+                f"Нельзя удалить товар: {reason} — скройте его вместо удаления",
             ) from e
         if not deleted:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Товар не найден")
