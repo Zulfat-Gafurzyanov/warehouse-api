@@ -29,6 +29,7 @@ class ProductService:
                 description=request.description,
                 cost_price=request.cost_price,
                 base_price=request.base_price,
+                consignment_price=request.consignment_price,
                 stock=request.stock,
                 is_new=request.is_new,
                 image_urls=request.image_urls,

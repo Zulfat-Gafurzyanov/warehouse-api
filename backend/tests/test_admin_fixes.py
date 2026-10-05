@@ -121,6 +121,7 @@ async def test_admin_can_update_product_sku(client: AsyncClient, mock_db_conn):
         {
             "id": 8, "sku": "MUG-001", "name": "Кружка", "category_id": 1,
             "description": None, "cost_price": "80.00", "base_price": "290.00",
+            "consignment_price": None,
             "stock": 18, "is_active": True, "is_new": False,
             "created_at": "2025-01-01T00:00:00Z", "updated_at": "2025-01-02T00:00:00Z",
         },

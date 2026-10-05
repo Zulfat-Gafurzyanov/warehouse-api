@@ -22,6 +22,7 @@ interface FormState {
   category_id: string;
   description: string;
   base_price: string;
+  consignment_price: string;
   is_new: boolean;
   is_active: boolean;
   // Первая ссылка — основное фото (то, что показывается на карточке в каталоге).
@@ -34,6 +35,7 @@ const EMPTY_FORM: FormState = {
   category_id: "",
   description: "",
   base_price: "",
+  consignment_price: "",
   is_new: false,
   is_active: true,
   image_urls: [],
@@ -109,6 +111,7 @@ export function ProductsPage() {
       category_id: String(product.category_id),
       description: product.description ?? "",
       base_price: product.base_price,
+      consignment_price: product.consignment_price ?? "",
       is_new: product.is_new,
       is_active: product.is_active,
       image_urls: product.images.map((i) => i.url),
@@ -170,6 +173,7 @@ export function ProductsPage() {
           category_id: Number(form.category_id),
           description: form.description || null,
           base_price: form.base_price,
+          consignment_price: form.consignment_price || null,
           is_new: form.is_new,
           is_active: form.is_active,
           image_urls,
@@ -184,6 +188,7 @@ export function ProductsPage() {
           category_id: Number(form.category_id),
           description: form.description || null,
           base_price: form.base_price,
+          consignment_price: form.consignment_price || null,
           is_new: form.is_new,
           image_urls,
         };
@@ -394,17 +399,35 @@ export function ProductsPage() {
               />
             </label>
 
-            <label className="form-field">
-              Базовая цена, ₽
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.base_price}
-                onChange={(e) => setForm({ ...form, base_price: e.target.value })}
-                required
-              />
-            </label>
+            <div className="form-row">
+              <label className="form-field">
+                Базовая цена, ₽
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.base_price}
+                  onChange={(e) => setForm({ ...form, base_price: e.target.value })}
+                  required
+                />
+              </label>
+              <label className="form-field">
+                Цена реализации, ₽
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="как базовая"
+                  value={form.consignment_price}
+                  onChange={(e) => setForm({ ...form, consignment_price: e.target.value })}
+                />
+              </label>
+            </div>
+            <p className="form-hint" style={{ marginTop: -8 }}>
+              Цена реализации действует по умолчанию для всех клиентов с типом «Реализация» —
+              если не задана, используется базовая цена. Индивидуальная цена в карточке клиента
+              всегда в приоритете.
+            </p>
 
             {!editingProduct && (
               <p className="form-hint" style={{ marginTop: -8 }}>

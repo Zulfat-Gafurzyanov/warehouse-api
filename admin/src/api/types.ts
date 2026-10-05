@@ -19,6 +19,7 @@ export interface ProductAdmin {
   description: string | null;
   cost_price: string;
   base_price: string;
+  consignment_price: string | null;
   stock: number;
   is_active: boolean;
   is_new: boolean;
@@ -34,6 +35,7 @@ export interface ProductCreateInput {
   description?: string | null;
   cost_price?: string;
   base_price: string;
+  consignment_price?: string | null;
   stock?: number;
   is_new?: boolean;
   image_urls?: string[];
@@ -46,6 +48,7 @@ export interface ProductUpdateInput {
   description?: string | null;
   cost_price?: string;
   base_price?: string;
+  consignment_price?: string | null;
   stock?: number;
   is_active?: boolean;
   is_new?: boolean;
@@ -107,6 +110,7 @@ export interface UserPriceListItem {
   base_price: string;
   price: string;
   is_custom: boolean;
+  is_group_price: boolean;
 }
 
 export interface TokenPair {

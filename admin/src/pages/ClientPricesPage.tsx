@@ -113,7 +113,7 @@ export function ClientPricesPage() {
         (i) => i.product_name.toLowerCase().includes(q) || i.product_sku.toLowerCase().includes(q),
       )
     : items;
-  const missingCount = items.filter((i) => !i.is_custom).length;
+  const missingCount = items.filter((i) => !i.is_custom && !i.is_group_price).length;
   const isConsignment = user.cooperation_type === "consignment";
 
   return (
@@ -142,8 +142,8 @@ export function ClientPricesPage() {
 
       {isConsignment && missingCount > 0 && (
         <p className="form-hint" style={{ marginTop: 0, color: "#9c6a10" }}>
-          Не задано индивидуальных цен: {missingCount} из {items.length} — по этим товарам клиент
-          увидит базовую цену, если ничего не изменить.
+          Нет ни индивидуальной цены, ни цены реализации: {missingCount} из {items.length} — по
+          этим товарам клиент увидит базовую цену, если ничего не изменить.
         </p>
       )}
 
@@ -176,7 +176,11 @@ export function ClientPricesPage() {
                 return (
                 <tr
                   key={item.product_id}
-                  style={isConsignment && !item.is_custom ? { background: "var(--color-bg-muted)" } : undefined}
+                  style={
+                    isConsignment && !item.is_custom && !item.is_group_price
+                      ? { background: "var(--color-bg-muted)" }
+                      : undefined
+                  }
                 >
                   <td>
                     {item.image_url ? (
@@ -212,6 +216,11 @@ export function ClientPricesPage() {
                     {item.is_custom && (
                       <span className="badge badge--info" style={{ marginLeft: 8 }}>
                         индивидуальная
+                      </span>
+                    )}
+                    {item.is_group_price && (
+                      <span className="badge badge--muted" style={{ marginLeft: 8 }}>
+                        по реализации
                       </span>
                     )}
                     {rowError[item.product_id] && (

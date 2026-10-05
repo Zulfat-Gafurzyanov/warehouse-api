@@ -16,8 +16,9 @@ class UserPriceOut(BaseModel):
 
 
 class UserPriceListItem(BaseModel):
-    """Строка полного списка товаров для настройки цен клиента: действующая цена = либо
-    индивидуальная (is_custom), либо базовая цена товара."""
+    """Строка полного списка товаров для настройки цен клиента: действующая цена — либо
+    индивидуальная (is_custom), либо цена реализации для группы (is_group_price), либо
+    базовая цена товара."""
 
     product_id: int
     product_sku: str
@@ -27,3 +28,4 @@ class UserPriceListItem(BaseModel):
     base_price: Decimal
     price: Decimal
     is_custom: bool
+    is_group_price: bool

@@ -17,6 +17,8 @@ class ProductCreate(BaseModel):
     description: str | None = None
     cost_price: Decimal = Decimal("0")
     base_price: Decimal
+    # Цена по умолчанию для клиентов под Реализацию — не задана, значит действует base_price.
+    consignment_price: Decimal | None = None
     stock: int = Field(default=0, ge=0)
     is_new: bool = False
     image_urls: list[str] = []
@@ -29,6 +31,7 @@ class ProductUpdate(BaseModel):
     description: str | None = None
     cost_price: Decimal | None = None
     base_price: Decimal | None = None
+    consignment_price: Decimal | None = None
     stock: int | None = Field(default=None, ge=0)
     is_active: bool | None = None
     is_new: bool | None = None
@@ -46,6 +49,7 @@ class ProductAdminOut(BaseModel):
     description: str | None
     cost_price: Decimal
     base_price: Decimal
+    consignment_price: Decimal | None
     stock: int
     is_active: bool
     is_new: bool

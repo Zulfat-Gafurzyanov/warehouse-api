@@ -26,6 +26,10 @@ class Product(TimestampMixin, Base):
         sa.Numeric(12, 2), server_default="0", nullable=False)
     base_price: Mapped[float] = mapped_column(
         sa.Numeric(12, 2), nullable=False)
+    # Цена по умолчанию для клиентов с cooperation_type='consignment' (Реализация).
+    # NULL — используется base_price, как и для Выкупа.
+    consignment_price: Mapped[float | None] = mapped_column(
+        sa.Numeric(12, 2), nullable=True)
     stock: Mapped[int] = mapped_column(
         sa.Integer, server_default="0", nullable=False)
     is_active: Mapped[bool] = mapped_column(

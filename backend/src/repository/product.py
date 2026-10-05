@@ -1,16 +1,23 @@
 import asyncpg
 
 _ADMIN_COLUMNS = """
-    id, sku, name, category_id, description, cost_price, base_price,
+    id, sku, name, category_id, description, cost_price, base_price, consignment_price,
     stock, is_active, is_new, created_at, updated_at
 """
 
-# Приоритет: индивидуальная цена клиента > базовая цена.
+# Приоритет: индивидуальная цена клиента > цена реализации (если клиент под Реализацией) > базовая цена.
 _CLIENT_PRICE_JOIN = """
     LEFT JOIN user_price up ON up.product_id = p.id AND up.user_id = $1
+    LEFT JOIN "user" u ON u.id = $1
 """
 
-_RESOLVED_PRICE = "COALESCE(up.price, p.base_price)"
+_RESOLVED_PRICE = """
+    COALESCE(
+        up.price,
+        CASE WHEN u.cooperation_type = 'consignment' THEN p.consignment_price END,
+        p.base_price
+    )
+"""
 
 
 class ProductRepository:
@@ -27,6 +34,7 @@ class ProductRepository:
         description: str | None,
         cost_price: float,
         base_price: float,
+        consignment_price: float | None,
         stock: int,
         is_new: bool,
         image_urls: list[str],
@@ -34,11 +42,13 @@ class ProductRepository:
         async with self.conn.transaction():
             product = await self.conn.fetchrow(
                 f"""
-                INSERT INTO product (sku, name, category_id, description, cost_price, base_price, stock, is_new)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                INSERT INTO product
+                    (sku, name, category_id, description, cost_price, base_price, consignment_price, stock, is_new)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                 RETURNING {_ADMIN_COLUMNS}
                 """,
-                sku, name, category_id, description, cost_price, base_price, stock, is_new,
+                sku, name, category_id, description, cost_price, base_price,
+                consignment_price, stock, is_new,
             )
             await self.conn.execute(
                 "INSERT INTO price_history (product_id, old_price, new_price) VALUES ($1, NULL, $2)",
