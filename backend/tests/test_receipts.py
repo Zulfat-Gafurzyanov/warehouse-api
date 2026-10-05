@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import pytest
 from httpx import AsyncClient
 
@@ -121,6 +123,59 @@ async def test_get_receipt_not_found(client: AsyncClient, mock_db_conn):
         "/api/v1/admin/receipts/999",
         headers=_auth_header(1, "admin"),
     )
+    assert resp.status_code == 404
+
+
+# ── Удаление приёмки ──────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_admin_can_delete_receipt_when_last_event(client: AsyncClient, mock_db_conn):
+    mock_db_conn.fetchrow.side_effect = [
+        _admin_record(),
+        {"reason": "receipt", "receipt_id": 5},  # последнее движение по товару — эта же приёмка
+    ]
+    mock_db_conn.fetch.return_value = [
+        {"product_id": 1, "quantity": 10, "unit_cost": "20.00", "product_name": "Магнит",
+         "current_stock": 10, "current_cost": "20.00"},
+    ]
+    mock_db_conn.execute.return_value = "DELETE 1"
+
+    resp = await client.delete("/api/v1/admin/receipts/5", headers=_auth_header(1, "admin"))
+    assert resp.status_code == 204
+
+    update_calls = [
+        c for c in mock_db_conn.execute.call_args_list
+        if "UPDATE product SET stock" in c.args[0]
+    ]
+    assert len(update_calls) == 1
+    # Это была первая приёмка товара (до неё остаток был 0) — откат обнуляет и остаток, и себестоимость.
+    assert update_calls[0].args[1:] == (1, 0, Decimal("0.00"))
+
+
+@pytest.mark.asyncio
+async def test_cannot_delete_receipt_with_later_activity(client: AsyncClient, mock_db_conn):
+    mock_db_conn.fetchrow.side_effect = [
+        _admin_record(),
+        {"reason": "order", "receipt_id": None},  # после приёмки уже был заказ
+    ]
+    mock_db_conn.fetch.return_value = [
+        {"product_id": 1, "quantity": 10, "unit_cost": "20.00", "product_name": "Магнит",
+         "current_stock": 7, "current_cost": "20.00"},
+    ]
+
+    resp = await client.delete("/api/v1/admin/receipts/5", headers=_auth_header(1, "admin"))
+    assert resp.status_code == 409
+    assert "Магнит" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_delete_nonexistent_receipt_404(client: AsyncClient, mock_db_conn):
+    mock_db_conn.fetchrow.return_value = _admin_record()
+    mock_db_conn.fetch.return_value = []
+    mock_db_conn.fetchval.return_value = None
+
+    resp = await client.delete("/api/v1/admin/receipts/999", headers=_auth_header(1, "admin"))
     assert resp.status_code == 404
 
 

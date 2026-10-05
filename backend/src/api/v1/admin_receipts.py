@@ -37,3 +37,13 @@ async def get_receipt(
     receipt_service: Annotated[ReceiptService, Depends(get_receipt_service)],
 ) -> ReceiptOut:
     return await receipt_service.get_by_id(receipt_id)
+
+
+@router.delete("/{receipt_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_receipt(
+    receipt_id: int,
+    receipt_service: Annotated[ReceiptService, Depends(get_receipt_service)],
+) -> None:
+    """Откатывает приёмку — только если по каждому её товару это было последнее движение
+    остатка, иначе 409 (нельзя честно пересчитать себестоимость задним числом)."""
+    await receipt_service.delete(receipt_id)

@@ -194,6 +194,10 @@ function StockModal({
   const [correcting, setCorrecting] = useState(false);
   const [correctError, setCorrectError] = useState<string | null>(null);
 
+  const [newCost, setNewCost] = useState(product.cost_price);
+  const [correctingCost, setCorrectingCost] = useState(false);
+  const [costCorrectError, setCostCorrectError] = useState<string | null>(null);
+
   function load() {
     setIsLoading(true);
     Promise.all([
@@ -228,6 +232,27 @@ function StockModal({
       setCorrectError(e instanceof ApiError ? e.message : "Не удалось скорректировать остаток");
     } finally {
       setCorrecting(false);
+    }
+  }
+
+  async function handleCostCorrect(e: FormEvent) {
+    e.preventDefault();
+    const value = Number(newCost);
+    if (!Number.isFinite(value) || value < 0) {
+      setCostCorrectError("Укажите себестоимость — число не меньше 0");
+      return;
+    }
+    setCorrectingCost(true);
+    setCostCorrectError(null);
+    try {
+      const updated = await api.patch<ProductAdmin>(`/admin/products/${product.id}`, {
+        cost_price: newCost,
+      });
+      onChanged(updated);
+    } catch (e) {
+      setCostCorrectError(e instanceof ApiError ? e.message : "Не удалось скорректировать себестоимость");
+    } finally {
+      setCorrectingCost(false);
     }
   }
 
@@ -306,6 +331,28 @@ function StockModal({
               </button>
             </form>
             {correctError && <p className="form-error">{correctError}</p>}
+
+            <p className="form-hint" style={{ marginBottom: 12 }}>
+              Если в приёмке была указана неверная цена закупки — поправьте себестоимость здесь.
+              Это не затронет прибыль по уже сделанным заказам: там она считается по цене на момент
+              продажи, а не текущей.
+            </p>
+            <form onSubmit={handleCostCorrect} className="form-row" style={{ alignItems: "flex-end" }}>
+              <label className="form-field">
+                Себестоимость, ₽/шт
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={newCost}
+                  onChange={(e) => setNewCost(e.target.value)}
+                />
+              </label>
+              <button type="submit" className="btn" disabled={correctingCost} style={{ marginBottom: 16 }}>
+                {correctingCost ? "Сохранение..." : "Сохранить"}
+              </button>
+            </form>
+            {costCorrectError && <p className="form-error">{costCorrectError}</p>}
           </div>
         </>
       )}

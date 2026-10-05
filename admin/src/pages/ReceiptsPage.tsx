@@ -32,6 +32,8 @@ export function ReceiptsPage() {
   const [detailReceipt, setDetailReceipt] = useState<ReceiptOut | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   function load() {
     setIsLoading(true);
@@ -143,6 +145,28 @@ export function ReceiptsPage() {
   function closeDetail() {
     setDetailReceipt(null);
     setDetailLoading(false);
+    setDeleteError(null);
+  }
+
+  async function handleDeleteReceipt() {
+    if (!detailReceipt) return;
+    if (
+      !confirm(
+        `Удалить приёмку №${detailReceipt.id}? Это возможно только если по каждому товару в ней не было операций позже. Остаток и себестоимость откатятся назад. Действие необратимо.`,
+      )
+    )
+      return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await api.delete(`/admin/receipts/${detailReceipt.id}`);
+      closeDetail();
+      load();
+    } catch (e) {
+      setDeleteError(e instanceof ApiError ? e.message : "Не удалось удалить приёмку");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -352,6 +376,19 @@ export function ReceiptsPage() {
                   ))}
                 </tbody>
               </table>
+
+              {deleteError && <p className="form-error">{deleteError}</p>}
+
+              <div className="modal__footer">
+                <button
+                  type="button"
+                  className="btn btn--danger"
+                  disabled={deleting}
+                  onClick={handleDeleteReceipt}
+                >
+                  {deleting ? "Удаление..." : "Удалить приёмку"}
+                </button>
+              </div>
             </>
           )}
         </Modal>
