@@ -33,7 +33,6 @@ function statusBadgeClass(status: OrderStatus): string {
   switch (status) {
     case "new":
       return "badge--info";
-    case "confirmed":
     case "processing":
       return "badge--warn";
     case "ready":

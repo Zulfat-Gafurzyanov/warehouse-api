@@ -7,7 +7,7 @@ from src.db.base import Base, TimestampMixin
 
 
 class Order(TimestampMixin, Base):
-    """Статусы: new, confirmed, processing, ready, delivered, cancelled."""
+    """Статусы: new, processing, ready, delivered (= «отправлен»), cancelled."""
 
     __tablename__ = "order"
 

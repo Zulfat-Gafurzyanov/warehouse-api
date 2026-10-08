@@ -92,9 +92,8 @@ export type SortOption = "default" | "price_asc" | "price_desc" | "new";
 
 export const ORDER_STATUS_LABELS: Record<string, string> = {
   new: "Новый",
-  confirmed: "Подтверждён",
   processing: "Собирается",
   ready: "Готов",
-  delivered: "Доставлен",
+  delivered: "Отправлен",
   cancelled: "Отменён",
 };

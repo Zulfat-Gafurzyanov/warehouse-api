@@ -7,9 +7,10 @@ from pydantic import BaseModel, Field
 
 class OrderStatus(str, Enum):
     NEW = "new"
-    CONFIRMED = "confirmed"
     PROCESSING = "processing"
     READY = "ready"
+    # Значение в базе осталось "delivered" (ничего не ломаем на пустую миграцию) —
+    # но по смыслу это "отправлен", не "доставлен клиенту".
     DELIVERED = "delivered"
     CANCELLED = "cancelled"
 

@@ -83,6 +83,6 @@ async def test_admin_set_order_status_not_found(client: AsyncClient, mock_db_con
     resp = await client.patch(
         "/api/v1/admin/orders/999/status",
         headers=_auth_header(1, "admin"),
-        json={"status": "confirmed"},
+        json={"status": "processing"},
     )
     assert resp.status_code == 404

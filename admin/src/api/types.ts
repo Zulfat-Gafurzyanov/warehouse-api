@@ -121,7 +121,6 @@ export interface TokenPair {
 
 export type OrderStatus =
   | "new"
-  | "confirmed"
   | "processing"
   | "ready"
   | "delivered"
@@ -129,16 +128,14 @@ export type OrderStatus =
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   new: "Новый",
-  confirmed: "Подтверждён",
   processing: "Собирается",
   ready: "Готов",
-  delivered: "Доставлен",
+  delivered: "Отправлен",
   cancelled: "Отменён",
 };
 
 export const ORDER_STATUS_OPTIONS: OrderStatus[] = [
   "new",
-  "confirmed",
   "processing",
   "ready",
   "delivered",
