@@ -139,6 +139,19 @@
   cursor: pointer;
 }
 
+/* Пальцем по 16px попасть сложно — на телефоне увеличиваем область нажатия,
+   не раздувая саму кнопку визуально (высота шага растёт за счёт padding). */
+@media (max-width: 600px) {
+  .product-card__stepper {
+    padding: 8px 10px;
+  }
+
+  .product-card__stepper button {
+    width: 28px;
+    height: 28px;
+  }
+}
+
 .product-card__stepper button:disabled {
   color: var(--color-border);
   cursor: not-allowed;

@@ -157,6 +157,17 @@
   color: var(--color-text);
 }
 
+@media (max-width: 600px) {
+  .cart-drawer__stepper {
+    padding: 6px 10px;
+  }
+
+  .cart-drawer__stepper button {
+    width: 28px;
+    height: 28px;
+  }
+}
+
 .cart-drawer__stepper button:disabled {
   color: var(--color-border);
   cursor: not-allowed;

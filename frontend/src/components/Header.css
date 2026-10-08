@@ -174,3 +174,13 @@
     padding-top: 14px;
   }
 }
+
+/* Самые узкие экраны (320px и около того) — название бренда обрезаем
+   многоточием, чтобы шапка не ужималась и не вылезала за край. */
+@media (max-width: 380px) {
+  .header__logo span {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
