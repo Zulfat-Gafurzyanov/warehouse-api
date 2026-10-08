@@ -1,0 +1,55 @@
+# Продакшен-оверлей. Запускать вместе с базовым файлом:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Отличия от теста: ничего, кроме nginx (80/443), не торчит наружу; домен
+# подставляется в сборку фронтендов и в CORS; JWT-ключи и сертификаты живут
+# в постоянных volume. Домен берётся из переменной DOMAIN в корневом .env.
+
+services:
+  backend:
+    ports: !reset []
+    volumes:
+      - jwt_keys:/app/keys
+    environment:
+      CORS_ORIGINS: '["https://${DOMAIN}","https://www.${DOMAIN}","https://admin.${DOMAIN}"]'
+
+  frontend:
+    build:
+      args:
+        VITE_API_BASE_URL: https://api.${DOMAIN}/api/v1
+    ports: !reset []
+
+  admin:
+    build:
+      args:
+        VITE_API_BASE_URL: https://api.${DOMAIN}/api/v1
+    ports: !reset []
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
+      - admin
+    environment:
+      DOMAIN: ${DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx/templates:/etc/nginx/templates:ro
+      - certbot_www:/var/www/certbot:ro
+      - certbot_certs:/etc/letsencrypt:ro
+
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - certbot_www:/var/www/certbot
+      - certbot_certs:/etc/letsencrypt
+    entrypoint: /bin/true  # сам по себе не запускается — только через `docker compose run`
+
+volumes:
+  jwt_keys:
+  certbot_www:
+  certbot_certs:

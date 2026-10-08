@@ -1,0 +1,20 @@
+# Временный конфиг только для самого первого запуска — до того, как появятся
+# сертификаты. Нужен, чтобы nginx вообще смог стартовать и отдать ACME-челлендж
+# certbot'у (сертификат на пустом месте не выпустить — курица и яйцо).
+# Используется один раз через deploy/init-ssl.sh, затем заменяется на полный
+# конфиг из templates/default.conf.template. Без переменных — server_name
+# специально catch-all, чтобы не зависеть от envsubst на этом шаге.
+
+server {
+    listen 80;
+    server_name _;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 200 "ok\n";
+        add_header Content-Type text/plain;
+    }
+}
