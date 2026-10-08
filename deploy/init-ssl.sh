@@ -51,7 +51,11 @@ $COMPOSE up -d nginx
 sleep 3
 
 echo "==> Запрашиваю сертификат у Let's Encrypt для $DOMAIN, www.$DOMAIN, admin.$DOMAIN, api.$DOMAIN"
-$COMPOSE run --rm certbot certonly \
+# --entrypoint certbot обязателен: в сервисе certbot в compose-файле
+# entrypoint переопределён на /bin/true (чтобы при обычном "up" он не
+# запускался сам), поэтому без этой опции "run certonly ..." тоже уйдёт
+# в /bin/true и завершится с кодом 0, ничего не сделав.
+$COMPOSE run --rm --entrypoint certbot certbot certonly \
     --webroot --webroot-path=/var/www/certbot \
     --email "$CERTBOT_EMAIL" --agree-tos --no-eff-email \
     -d "$DOMAIN" -d "www.$DOMAIN" -d "admin.$DOMAIN" -d "api.$DOMAIN"

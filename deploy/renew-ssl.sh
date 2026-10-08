@@ -9,5 +9,8 @@ cd "$(dirname "$0")/.."
 
 COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
 
-$COMPOSE run --rm certbot renew --webroot --webroot-path=/var/www/certbot
+# --entrypoint certbot обязателен: сервис certbot в compose-файле имеет
+# entrypoint: /bin/true, иначе "run renew ..." тоже уйдёт в /bin/true
+# и завершится с кодом 0, ничего не продлив.
+$COMPOSE run --rm --entrypoint certbot certbot renew --webroot --webroot-path=/var/www/certbot
 $COMPOSE exec nginx nginx -s reload
