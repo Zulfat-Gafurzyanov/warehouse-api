@@ -1,6 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { api, ApiError, resolveImageUrl, uploadImages } from "../api/client";
 import type { CostPriceItem, CostPriceItemInput } from "../api/types";
+import { ActionsMenu } from "../components/ActionsMenu";
 import { Modal } from "../components/Modal";
 import { formatPrice } from "../utils/format";
 
@@ -146,17 +147,15 @@ export function CostPriceItemsPage() {
         ) : items.length === 0 ? (
           <div className="table-empty">Записей пока нет</div>
         ) : (
-          <table className="data-table">
+          <table className="data-table cost-price-table">
             <thead>
               <tr>
-                <th></th>
-                <th>Название</th>
-                <th>Цена за шт.</th>
+                <th>Товар</th>
+                <th>Цена/шт</th>
                 <th>Кол-во</th>
-                <th>Доставка по Китаю/шт.</th>
-                <th>Доставка в Россию/шт.</th>
-                <th>Себестоимость/шт.</th>
-                <th>Себестоимость партии</th>
+                <th>Доставка/шт</th>
+                <th>Итого/шт</th>
+                <th>Итого партия</th>
                 <th></th>
               </tr>
             </thead>
@@ -164,35 +163,41 @@ export function CostPriceItemsPage() {
               {items.map((item) => (
                 <tr key={item.id}>
                   <td>
-                    {item.photo_url ? (
-                      <img
-                        src={resolveImageUrl(item.photo_url)}
-                        alt=""
-                        className="receipt-line-thumb"
-                      />
-                    ) : (
-                      <div className="receipt-line-thumb receipt-line-thumb--empty" />
-                    )}
+                    <div className="cost-price-table__name-cell">
+                      {item.photo_url ? (
+                        <img
+                          src={resolveImageUrl(item.photo_url)}
+                          alt=""
+                          className="receipt-line-thumb"
+                        />
+                      ) : (
+                        <div className="receipt-line-thumb receipt-line-thumb--empty" />
+                      )}
+                      <span>{item.name}</span>
+                    </div>
                   </td>
-                  <td>{item.name}</td>
                   <td>{formatPrice(item.unit_price)}</td>
                   <td>{item.quantity} шт</td>
-                  <td>{formatPrice(item.china_delivery_price)}</td>
-                  <td>{formatPrice(item.russia_delivery_price)}</td>
+                  <td>
+                    <div className="cost-price-table__delivery">
+                      <span>Китай: {formatPrice(item.china_delivery_price)}</span>
+                      <span>Россия: {formatPrice(item.russia_delivery_price)}</span>
+                    </div>
+                  </td>
                   <td style={{ fontWeight: 600 }}>{formatPrice(item.total_cost_per_unit)}</td>
                   <td style={{ fontWeight: 600 }}>{formatPrice(item.total_cost_batch)}</td>
                   <td>
-                    <div className="table-actions">
-                      <button className="btn btn--outline btn--sm" onClick={() => openEdit(item)}>
+                    <ActionsMenu>
+                      <button className="actions-menu__item" onClick={() => openEdit(item)}>
                         Изменить
                       </button>
                       <button
-                        className="btn btn--danger btn--sm"
+                        className="actions-menu__item actions-menu__item--danger"
                         onClick={() => handleDelete(item)}
                       >
                         Удалить
                       </button>
-                    </div>
+                    </ActionsMenu>
                   </td>
                 </tr>
               ))}
