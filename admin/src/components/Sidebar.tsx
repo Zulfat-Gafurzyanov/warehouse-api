@@ -31,13 +31,13 @@ export function Sidebar() {
             {item.label}
           </NavLink>
         ))}
-      </nav>
 
-      <div className="sidebar-footer-nav">
+        <div className="sidebar-nav__divider" />
+
         <NavLink to="/cost-price-items" className={navLinkClass}>
           Рабочий блокнот
         </NavLink>
-      </div>
+      </nav>
 
       <button className="sidebar__logout" onClick={signOut}>
         Выйти
