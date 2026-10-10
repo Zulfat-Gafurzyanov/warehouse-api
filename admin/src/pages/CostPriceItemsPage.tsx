@@ -128,9 +128,9 @@ export function CostPriceItemsPage() {
     <div>
       <div className="page-header">
         <div>
-          <h1>Себестоимость товара</h1>
+          <h1>Рабочий блокнот</h1>
           <div className="page-header__sub">
-            Рабочий блокнот для партий из Китая — не связан с «Товары» и «Склад»
+            Заметки по партиям из Китая — не связан с «Товары» и «Склад»
           </div>
         </div>
         <button className="btn" onClick={openCreate}>

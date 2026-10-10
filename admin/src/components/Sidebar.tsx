@@ -12,7 +12,6 @@ const ITEMS = [
   { to: "/warehouse", label: "Склад" },
   { to: "/receipts", label: "Приёмка" },
   { to: "/categories", label: "Категории" },
-  { to: "/cost-price-items", label: "Себестоимость товара" },
   { to: "/clients", label: "Клиенты" },
 ];
 
@@ -33,6 +32,12 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
+
+      <div className="sidebar-footer-nav">
+        <NavLink to="/cost-price-items" className={navLinkClass}>
+          Рабочий блокнот
+        </NavLink>
+      </div>
 
       <button className="sidebar__logout" onClick={signOut}>
         Выйти

@@ -58,6 +58,22 @@
   font-weight: 600;
 }
 
+.sidebar-footer-nav {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 10px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.sidebar-footer-nav .sidebar-nav__link {
+  opacity: 0.75;
+}
+
+.sidebar-footer-nav .sidebar-nav__link:hover,
+.sidebar-footer-nav .sidebar-nav__link--active {
+  opacity: 1;
+}
+
 .sidebar__logout {
   background: none;
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -97,6 +113,16 @@
   }
 
   .sidebar-nav__link {
+    white-space: nowrap;
+  }
+
+  .sidebar-footer-nav {
+    border-top: none;
+    padding-top: 0;
+    margin: 0 0 0 10px;
+  }
+
+  .sidebar-footer-nav .sidebar-nav__link {
     white-space: nowrap;
   }
 
