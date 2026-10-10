@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from src.api.v1.admin import router as admin_router
 from src.api.v1.admin_analytics import router as admin_analytics_router
 from src.api.v1.admin_catalog import router as admin_catalog_router
+from src.api.v1.admin_cost_price_items import router as admin_cost_price_items_router
 from src.api.v1.admin_orders import router as admin_orders_router
 from src.api.v1.admin_pricing import router as admin_pricing_router
 from src.api.v1.admin_receipts import router as admin_receipts_router
@@ -29,3 +30,4 @@ v1_router.include_router(admin_orders_router)
 v1_router.include_router(admin_analytics_router)
 v1_router.include_router(admin_uploads_router)
 v1_router.include_router(admin_receipts_router)
+v1_router.include_router(admin_cost_price_items_router)

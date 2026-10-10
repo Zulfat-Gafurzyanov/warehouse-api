@@ -55,6 +55,29 @@ export interface ProductUpdateInput {
   image_urls?: string[];
 }
 
+export interface CostPriceItem {
+  id: number;
+  name: string;
+  photo_url: string | null;
+  unit_price: string;
+  quantity: number;
+  china_delivery_price: string;
+  russia_delivery_price: string;
+  total_cost_per_unit: string;
+  total_cost_batch: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CostPriceItemInput {
+  name: string;
+  photo_url?: string | null;
+  unit_price: string;
+  quantity: number;
+  china_delivery_price: string;
+  russia_delivery_price: string;
+}
+
 export type UserRole = "user" | "admin";
 export type CooperationType = "buyout" | "consignment";
 

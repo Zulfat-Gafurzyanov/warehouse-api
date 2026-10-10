@@ -12,6 +12,7 @@ const ITEMS = [
   { to: "/warehouse", label: "Склад" },
   { to: "/receipts", label: "Приёмка" },
   { to: "/categories", label: "Категории" },
+  { to: "/cost-price-items", label: "Себестоимость товара" },
   { to: "/clients", label: "Клиенты" },
 ];
 

@@ -4,6 +4,7 @@ import { CategoriesPage } from "./pages/CategoriesPage";
 import { ClientDetailPage } from "./pages/ClientDetailPage";
 import { ClientPricesPage } from "./pages/ClientPricesPage";
 import { ClientsPage } from "./pages/ClientsPage";
+import { CostPriceItemsPage } from "./pages/CostPriceItemsPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { InventoryPage } from "./pages/InventoryPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/warehouse" element={<InventoryPage />} />
         <Route path="/receipts" element={<ReceiptsPage />} />
         <Route path="/categories" element={<CategoriesPage />} />
+        <Route path="/cost-price-items" element={<CostPriceItemsPage />} />
         <Route path="/clients" element={<ClientsPage />} />
         <Route path="/clients/:id" element={<ClientDetailPage />} />
         <Route path="/clients/:id/prices" element={<ClientPricesPage />} />

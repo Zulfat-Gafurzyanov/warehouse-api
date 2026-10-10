@@ -13,6 +13,7 @@ from src.core.security import decode_access_token
 from src.db import pool as db_pool_module
 from src.repository.analytics import AnalyticsRepository
 from src.repository.category import CategoryRepository
+from src.repository.cost_price_item import CostPriceItemRepository
 from src.repository.favorite import FavoriteRepository
 from src.repository.order import OrderRepository
 from src.repository.product import ProductRepository
@@ -22,6 +23,7 @@ from src.repository.user_price import UserPriceRepository
 from src.service.analytics import AnalyticsService
 from src.service.auth import AuthService
 from src.service.category import CategoryService
+from src.service.cost_price_item import CostPriceItemService
 from src.service.favorite import FavoriteService
 from src.service.order import OrderService
 from src.service.notification_client import NotificationClient
@@ -133,6 +135,12 @@ async def get_receipt_repository(
     return ReceiptRepository(conn)
 
 
+async def get_cost_price_item_repository(
+    conn: Annotated[asyncpg.Connection, Depends(get_db)],
+) -> CostPriceItemRepository:
+    return CostPriceItemRepository(conn)
+
+
 # ── Сервисы ──────────────────────────────────────────────
 
 
@@ -191,3 +199,9 @@ async def get_analytics_service(
     repo: Annotated[AnalyticsRepository, Depends(get_analytics_repository)],
 ) -> AnalyticsService:
     return AnalyticsService(repo)
+
+
+async def get_cost_price_item_service(
+    repo: Annotated[CostPriceItemRepository, Depends(get_cost_price_item_repository)],
+) -> CostPriceItemService:
+    return CostPriceItemService(repo)

@@ -1,4 +1,5 @@
 from src.models.category import Category
+from src.models.cost_price_item import CostPriceItem
 from src.models.favorite import Favorite
 from src.models.order import Order
 from src.models.order_item import OrderItem
@@ -13,6 +14,7 @@ from src.models.user_price import UserPrice
 
 __all__ = [
     "Category",
+    "CostPriceItem",
     "Favorite",
     "Order",
     "OrderItem",
