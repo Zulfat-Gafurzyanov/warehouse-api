@@ -12,6 +12,7 @@ import type {
 } from "../api/types";
 import { ActionsMenu } from "../components/ActionsMenu";
 import { BarChart } from "../components/BarChart";
+import { ImageCropModal } from "../components/ImageCropModal";
 import { Modal } from "../components/Modal";
 import { formatDateTime, formatPrice } from "../utils/format";
 import { generateSkuFromName } from "../utils/sku";
@@ -59,6 +60,7 @@ export function ProductsPage() {
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [newPhotoUrl, setNewPhotoUrl] = useState("");
+  const [cropQueue, setCropQueue] = useState<File[]>([]);
 
   const [statsProduct, setStatsProduct] = useState<ProductAdmin | null>(null);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
@@ -122,20 +124,29 @@ export function ProductsPage() {
     setModalOpen(true);
   }
 
-  async function handlePhotoUpload(e: ChangeEvent<HTMLInputElement>) {
+  function handlePhotoUpload(e: ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    setUploadingPhotos(true);
     setUploadError(null);
+    setCropQueue(Array.from(files));
+    e.target.value = ""; // чтобы можно было выбрать тот же файл повторно
+  }
+
+  async function handleCropConfirm(cropped: File) {
+    setUploadingPhotos(true);
     try {
-      const urls = await uploadImages(Array.from(files));
+      const urls = await uploadImages([cropped]);
       setForm((prev) => ({ ...prev, image_urls: [...prev.image_urls, ...urls] }));
     } catch (err) {
       setUploadError(err instanceof ApiError ? err.message : "Не удалось загрузить фото");
     } finally {
       setUploadingPhotos(false);
-      e.target.value = ""; // чтобы можно было выбрать тот же файл повторно
+      setCropQueue((prev) => prev.slice(1));
     }
+  }
+
+  function handleCropCancel() {
+    setCropQueue((prev) => prev.slice(1));
   }
 
   function handleAddPhotoUrl() {
@@ -553,6 +564,10 @@ export function ProductsPage() {
         <Modal title="Фото товара" onClose={() => setZoomedImage(null)}>
           <img src={resolveImageUrl(zoomedImage)} alt="" style={{ width: "100%", borderRadius: "var(--radius-md)" }} />
         </Modal>
+      )}
+
+      {cropQueue[0] && (
+        <ImageCropModal key={cropQueue[0].name + cropQueue[0].lastModified} file={cropQueue[0]} onConfirm={handleCropConfirm} onCancel={handleCropCancel} />
       )}
     </div>
   );

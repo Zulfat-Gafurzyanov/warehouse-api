@@ -493,6 +493,23 @@ table.data-table {
   height: 16px;
 }
 
+/* ── Кроп фото ──────────────────────────────────────── */
+
+.image-crop__viewport {
+  position: relative;
+  overflow: hidden;
+  margin: 0 auto;
+  background: #1a1a1a;
+  border-radius: var(--radius-sm);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.image-crop__viewport:active {
+  cursor: grabbing;
+}
+
 /* ── Modal ──────────────────────────────────────────── */
 
 .modal-overlay {
