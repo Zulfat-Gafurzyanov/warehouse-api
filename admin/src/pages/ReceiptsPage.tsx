@@ -35,13 +35,17 @@ export function ReceiptsPage() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  function load() {
-    setIsLoading(true);
+  // silent=true — без экрана загрузки, чтобы список не схлопывался и не сбрасывал
+  // прокрутку после создания/удаления приёмки.
+  function load(silent = false) {
+    if (!silent) setIsLoading(true);
     api
       .get<ReceiptListItem[]>("/admin/receipts?limit=100")
       .then(setReceipts)
       .catch((e) => setError(e instanceof ApiError ? e.message : "Не удалось загрузить приёмки"))
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (!silent) setIsLoading(false);
+      });
   }
 
   useEffect(load, []);
@@ -122,7 +126,7 @@ export function ReceiptsPage() {
         })),
       });
       setModalOpen(false);
-      load();
+      load(true);
     } catch (err) {
       setFormError(err instanceof ApiError ? err.message : "Не удалось оформить приёмку");
     } finally {
@@ -161,7 +165,7 @@ export function ReceiptsPage() {
     try {
       await api.delete(`/admin/receipts/${detailReceipt.id}`);
       closeDetail();
-      load();
+      load(true);
     } catch (e) {
       setDeleteError(e instanceof ApiError ? e.message : "Не удалось удалить приёмку");
     } finally {

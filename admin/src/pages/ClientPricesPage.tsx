@@ -41,8 +41,10 @@ export function ClientPricesPage() {
   const [rowError, setRowError] = useState<Record<number, string>>({});
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
-  function load() {
-    setIsLoading(true);
+  // silent=true — без экрана загрузки, чтобы список не схлопывался и не сбрасывал
+  // прокрутку после сохранения/сброса цены в конце длинного списка.
+  function load(silent = false) {
+    if (!silent) setIsLoading(true);
     Promise.all([
       api.get<UserProfile>(`/admin/users/${userId}`),
       api.get<UserPriceListItem[]>(`/admin/users/${userId}/price-list`),
@@ -53,7 +55,9 @@ export function ClientPricesPage() {
         setDrafts(Object.fromEntries(list.map((i) => [i.product_id, i.price])));
       })
       .catch((e) => setError(e instanceof ApiError ? e.message : "Не удалось загрузить цены"))
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (!silent) setIsLoading(false);
+      });
   }
 
   useEffect(load, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -72,7 +76,7 @@ export function ClientPricesPage() {
       await api.put(`/admin/users/${userId}/prices/${item.product_id}`, {
         price: value.replace(",", "."),
       });
-      load();
+      load(true);
     } catch (e) {
       setRowError((prev) => ({
         ...prev,
@@ -87,7 +91,7 @@ export function ClientPricesPage() {
     setRowBusy((prev) => ({ ...prev, [item.product_id]: true }));
     try {
       await api.delete(`/admin/users/${userId}/prices/${item.product_id}`);
-      load();
+      load(true);
     } catch (e) {
       alert(e instanceof ApiError ? e.message : "Не удалось сбросить цену");
     } finally {

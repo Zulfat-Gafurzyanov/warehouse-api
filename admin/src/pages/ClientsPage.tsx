@@ -36,13 +36,17 @@ export function ClientsPage() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  function load() {
-    setIsLoading(true);
+  // silent=true — без экрана загрузки, чтобы список не схлопывался и не сбрасывал
+  // прокрутку после сохранения.
+  function load(silent = false) {
+    if (!silent) setIsLoading(true);
     api
       .get<UserProfile[]>("/admin/users?limit=200")
       .then(setUsers)
       .catch((e) => setError(e instanceof ApiError ? e.message : "Не удалось загрузить клиентов"))
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (!silent) setIsLoading(false);
+      });
   }
 
   useEffect(load, []);
@@ -77,7 +81,7 @@ export function ClientsPage() {
       };
       await api.post("/admin/users", body);
       setCreateOpen(false);
-      load();
+      load(true);
     } catch (e) {
       setCreateError(e instanceof ApiError ? e.message : "Не удалось создать клиента");
     } finally {

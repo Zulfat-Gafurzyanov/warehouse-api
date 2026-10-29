@@ -65,8 +65,11 @@ export function ProductsPage() {
   const [statsProduct, setStatsProduct] = useState<ProductAdmin | null>(null);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
-  function load() {
-    setIsLoading(true);
+  // silent=true пропускает экран загрузки — используется после сохранения/удаления,
+  // чтобы таблица не схлопывалась на время запроса и страницу не отбрасывало наверх
+  // (актуально, когда редактируешь товар в конце длинного списка).
+  function load(silent = false) {
+    if (!silent) setIsLoading(true);
     const params = new URLSearchParams({ limit: "200" });
     if (categoryFilter) params.set("category_id", categoryFilter);
     if (search.trim()) params.set("search", search.trim());
@@ -75,7 +78,9 @@ export function ProductsPage() {
       .get<ProductAdmin[]>(`/admin/products?${params.toString()}`)
       .then(setProducts)
       .catch((e) => setError(e instanceof ApiError ? e.message : "Не удалось загрузить товары"))
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (!silent) setIsLoading(false);
+      });
   }
 
   useEffect(() => {
@@ -206,7 +211,7 @@ export function ProductsPage() {
         await api.post("/admin/products", body);
       }
       setModalOpen(false);
-      load();
+      load(true);
     } catch (e) {
       setFormError(e instanceof ApiError ? e.message : "Не удалось сохранить товар");
     } finally {
@@ -217,7 +222,7 @@ export function ProductsPage() {
   async function toggleActive(product: ProductAdmin) {
     try {
       await api.patch(`/admin/products/${product.id}`, { is_active: !product.is_active });
-      load();
+      load(true);
     } catch (e) {
       alert(e instanceof ApiError ? e.message : "Не удалось изменить статус товара");
     }
@@ -227,7 +232,7 @@ export function ProductsPage() {
     if (!confirm(`Удалить товар «${product.name}»? Это необратимо.`)) return;
     try {
       await api.delete(`/admin/products/${product.id}`);
-      load();
+      load(true);
     } catch (e) {
       alert(e instanceof ApiError ? e.message : "Не удалось удалить товар");
     }

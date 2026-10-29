@@ -198,8 +198,9 @@ function StockModal({
   const [correctingCost, setCorrectingCost] = useState(false);
   const [costCorrectError, setCostCorrectError] = useState<string | null>(null);
 
-  function load() {
-    setIsLoading(true);
+  // silent=true — без экрана загрузки, чтобы история не схлопывалась после корректировки.
+  function load(silent = false) {
+    if (!silent) setIsLoading(true);
     Promise.all([
       api.get<StockHistoryEntry[]>(`/admin/products/${product.id}/stock-history?limit=30`),
       api.get<ProductStats>(`/admin/analytics/products/${product.id}/stats`),
@@ -209,7 +210,9 @@ function StockModal({
         setStats(st);
       })
       .catch((e) => setError(e instanceof ApiError ? e.message : "Не удалось загрузить историю"))
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (!silent) setIsLoading(false);
+      });
   }
 
   useEffect(load, [product.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -227,7 +230,7 @@ function StockModal({
     try {
       const updated = await api.patch<ProductAdmin>(`/admin/products/${product.id}`, { stock: value });
       onChanged(updated);
-      load();
+      load(true);
     } catch (e) {
       setCorrectError(e instanceof ApiError ? e.message : "Не удалось скорректировать остаток");
     } finally {

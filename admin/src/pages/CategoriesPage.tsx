@@ -15,13 +15,17 @@ export function CategoriesPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  function load() {
-    setIsLoading(true);
+  // silent=true — без экрана загрузки, чтобы список не схлопывался и не сбрасывал
+  // прокрутку после сохранения/удаления.
+  function load(silent = false) {
+    if (!silent) setIsLoading(true);
     api
       .get<Category[]>("/categories")
       .then(setCategories)
       .catch((e) => setError(e instanceof ApiError ? e.message : "Не удалось загрузить категории"))
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (!silent) setIsLoading(false);
+      });
   }
 
   useEffect(load, []);
@@ -51,7 +55,7 @@ export function CategoriesPage() {
         await api.post("/admin/categories", { name });
       }
       setModalMode(null);
-      load();
+      load(true);
     } catch (e) {
       setFormError(e instanceof ApiError ? e.message : "Не удалось сохранить категорию");
     } finally {
@@ -63,7 +67,7 @@ export function CategoriesPage() {
     if (!confirm(`Удалить категорию «${category.name}»?`)) return;
     try {
       await api.delete(`/admin/categories/${category.id}`);
-      load();
+      load(true);
     } catch (e) {
       alert(e instanceof ApiError ? e.message : "Не удалось удалить категорию");
     }

@@ -36,13 +36,17 @@ export function CostPriceItemsPage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  function load() {
-    setIsLoading(true);
+  // silent=true — без экрана загрузки, чтобы список не схлопывался и не сбрасывал
+  // прокрутку после сохранения/удаления.
+  function load(silent = false) {
+    if (!silent) setIsLoading(true);
     api
       .get<CostPriceItem[]>("/admin/cost-price-items")
       .then(setItems)
       .catch((e) => setError(e instanceof ApiError ? e.message : "Не удалось загрузить записи"))
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (!silent) setIsLoading(false);
+      });
   }
 
   useEffect(load, []);
@@ -107,7 +111,7 @@ export function CostPriceItemsPage() {
         await api.post("/admin/cost-price-items", body);
       }
       setModalOpen(false);
-      load();
+      load(true);
     } catch (e) {
       setFormError(e instanceof ApiError ? e.message : "Не удалось сохранить запись");
     } finally {
@@ -119,7 +123,7 @@ export function CostPriceItemsPage() {
     if (!confirm(`Удалить запись «${item.name}»?`)) return;
     try {
       await api.delete(`/admin/cost-price-items/${item.id}`);
-      load();
+      load(true);
     } catch (e) {
       alert(e instanceof ApiError ? e.message : "Не удалось удалить запись");
     }
