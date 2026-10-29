@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import "./ActionsMenu.css";
 
@@ -19,6 +19,19 @@ export function ActionsMenu({ children }: { children: ReactNode }) {
     }
     setOpen((v) => !v);
   }
+
+  // Пункты меню для строк в конце таблицы иначе вылезали за нижний край экрана и
+  // становились недоступны — после первого рендера меряем его реальную высоту и,
+  // если снизу не хватает места, открываем его вверх от кнопки вместо вниз.
+  useLayoutEffect(() => {
+    if (!open || !menuRef.current || !triggerRef.current) return;
+    const menuRect = menuRef.current.getBoundingClientRect();
+    if (menuRect.bottom > window.innerHeight) {
+      const triggerRect = triggerRef.current.getBoundingClientRect();
+      const flippedTop = triggerRect.top - menuRect.height - 4;
+      setPos((prev) => (prev && prev.top === flippedTop ? prev : { top: Math.max(4, flippedTop), left: triggerRect.right }));
+    }
+  }, [open, pos]);
 
   useEffect(() => {
     if (!open) return;
